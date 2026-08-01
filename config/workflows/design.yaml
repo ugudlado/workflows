@@ -1,0 +1,12 @@
+steps:
+  - check-rerun
+  - create-worktree
+  - load-ticket-context
+  - explore
+  - design
+  - id: design-review
+    on_failure: design
+  - learn
+  - persist-learnings # validate + append + commit learn's proposed eval scenarios
+  - eval-prompts # opt-in prompt eval (ORCHESTRATOR_PROMPT_EVAL=1); no-op otherwise
+  - workflow-report

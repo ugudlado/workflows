@@ -1,0 +1,4 @@
+id: explore
+version: 5
+prompt: explore/SKILL.md
+model: sonnet
