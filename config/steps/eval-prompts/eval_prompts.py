@@ -43,7 +43,7 @@ def _load_state(path: str) -> dict:
 
 
 def ticket_id_from_state(state: dict) -> str:
-    """Uppercased ticket_id, matching lib/ticket-sync.sh's normalization."""
+    """Uppercased ticket_id, matching lib/ticket/ticket-sync.sh's normalization."""
     return str(state.get("ticket_id") or "").strip().upper()
 
 

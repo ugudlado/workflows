@@ -8,8 +8,8 @@ set -euo pipefail
 : "${TICKET_SYNC_LOG_PREFIX:?orchestrator: TICKET_SYNC_LOG_PREFIX required}"
 
 STATE_YAML="${ORCHESTRATOR_STATE_YAML_PATH:-${STATE_YAML_PATH:?orchestrator: state yaml path required}}"
-LIB="$(cd "$(dirname "$0")/../lib" && pwd)/backlog-api.sh"
-# shellcheck source=../lib/backlog-api.sh
+LIB="$(cd "$(dirname "$0")/../../lib/ticket" && pwd)/backlog-api.sh"
+# shellcheck source=../../lib/ticket/backlog-api.sh
 source "$LIB"
 
 _read_state_field() {

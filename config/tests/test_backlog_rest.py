@@ -1,6 +1,6 @@
 """Backlog REST integration: ticket context, project resolution, and API helpers.
 
-Covers config/steps/lib/backlog-api.sh and the load-ticket-context step — all
+Covers config/lib/ticket/backlog-api.sh and the load-ticket-context step — all
 config-owned bash, exercised via subprocess. Engine-boundary assertions (that
 orchestrator_next has no ticket-fetching logic of its own) live in
 orchestrator_next/tests/test_run_loop_ticket_agnostic.py instead.
@@ -22,7 +22,7 @@ if _REPO not in sys.path:
 
 _REPO_PATH = Path(_REPO)
 _LOAD_SCRIPT = _REPO_PATH / "steps" / "load-ticket-context" / "script.sh"
-_API_SH = _REPO_PATH / "steps" / "lib" / "backlog-api.sh"
+_API_SH = _REPO_PATH / "lib" / "ticket" / "backlog-api.sh"
 
 
 def test_load_ticket_context_success(tmp_path, monkeypatch):
@@ -189,7 +189,7 @@ def test_backlog_api_project_empty_when_no_repo_root():
     assert _resolve_project({}, None) == ""
 
 
-_SYNC_SH = _REPO_PATH / "steps" / "lib" / "ticket-sync.sh"
+_SYNC_SH = _REPO_PATH / "lib" / "ticket" / "ticket-sync.sh"
 
 def _correlation_line(env_overrides: dict, ticket_id: str = "ORC-125") -> str:
     """Run backlog_api_correlation_line() under a controlled env."""
