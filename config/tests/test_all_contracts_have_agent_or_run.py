@@ -1,5 +1,6 @@
 """
-Regression — every workflow step must have a contract with run: | prompt:+model:.
+Regression — every workflow step must have a contract with run: | prompt:,
+and every prompt step must be listed under step_models: in models.yaml.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ _CONFIG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _STEPS_DIR = os.path.join(_CONFIG_DIR, "steps")
 _SKILLS_DIR = os.path.abspath(os.path.join(_CONFIG_DIR, "..", "skills"))
 _WORKFLOWS_DIR = os.path.join(_CONFIG_DIR, "workflows")
+_MODELS_YAML = os.path.join(_CONFIG_DIR, "models.yaml")
 
 _EXCLUDED_STEPS: Set[str] = {"select-workflow"}
 
@@ -42,6 +44,13 @@ def _load_contract(step_id: str) -> dict | None:
         return yaml.safe_load(f)
 
 
+def _step_models() -> dict:
+    with open(_MODELS_YAML) as f:
+        data = yaml.safe_load(f) or {}
+    sm = data.get("step_models") or {}
+    return sm if isinstance(sm, dict) else {}
+
+
 def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_SKILLS_TEST_OVERRIDE", _SKILLS_DIR)
     monkeypatch.setenv("ORCHESTRATOR_STEP_CONTRACTS_TEST_OVERRIDE", _STEPS_DIR)
@@ -51,6 +60,9 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
     violations: list[str] = []
     missing_contracts: list[str] = []
     missing_charter: list[str] = []
+    missing_step_models: list[str] = []
+    banned_model_keys: list[str] = []
+    step_models = _step_models()
 
     for step_id in sorted(step_ids):
         if step_id in _EXCLUDED_STEPS:
@@ -64,7 +76,7 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
         has_run = bool(contract.get("run"))
         has_skill = bool(contract.get("skill"))
         has_prompt = bool(contract.get("prompt"))
-        has_model = bool(contract.get("model"))
+        has_model = "model" in contract
 
         if has_skill:
             violations.append(step_id)
@@ -73,12 +85,14 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
         if kinds != 1:
             violations.append(step_id)
             continue
-        if has_prompt and not has_model:
-            violations.append(step_id)
+        if has_model:
+            banned_model_keys.append(step_id)
+            continue
+        if has_prompt and step_id not in step_models:
+            missing_step_models.append(step_id)
             continue
 
         if has_prompt:
-            # Prefer step-local <id>/SKILL.md (symlink layout); else skills search.
             local = os.path.join(_STEPS_DIR, step_id, contract["prompt"])
             if os.path.isfile(local):
                 continue
@@ -92,13 +106,23 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
         error_lines.append(f"Contracts not found: {missing_contracts}")
     if violations:
         error_lines.append(
-            "Contracts must declare exactly one of run: | prompt:+model: "
+            "Contracts must declare exactly one of run: | prompt: "
             "(skill: is removed):\n"
             + "\n".join(f"  - {s}" for s in violations)
         )
+    if banned_model_keys:
+        error_lines.append(
+            "Contracts must not declare model: (use step_models: in models.yaml):\n"
+            + "\n".join(f"  - {s}" for s in banned_model_keys)
+        )
+    if missing_step_models:
+        error_lines.append(
+            "Prompt steps missing from models.yaml step_models:\n"
+            + "\n".join(f"  - {s}" for s in missing_step_models)
+        )
     if missing_charter:
         error_lines.append(
-            "Missing prompt directories:\n"
+            "Missing prompt files:\n"
             + "\n".join(f"  - {s}" for s in missing_charter)
         )
 

@@ -1,9 +1,5 @@
 """
-End-to-end tests for step directory contracts (shell | prompt).
-
-Discovers every config/steps/<id>/ directory that contains a contract.yaml
-and asserts:
-  - prompt steps (model:) load non-empty instruction + prompt_dir
+  - prompt steps (prompt:) load non-empty instruction + prompt_dir
   - shell steps (run:) resolve to an existing script path
 """
 from __future__ import annotations
@@ -45,8 +41,6 @@ def _step_kind(step_id: str) -> str:
         return "shell"
     if data.get("prompt"):
         return "prompt"
-    if data.get("model"):
-        return "prompt"  # legacy model-only
     return "unknown"
 
 
@@ -65,7 +59,7 @@ def point_parser_at_real_steps(monkeypatch):
 def test_contract_kind_matches_yaml(step_id: str):
     expected_kind = _step_kind(step_id)
     assert expected_kind in ("prompt", "shell"), (
-        f"{step_id}/contract.yaml must declare run: | prompt:+model:; got {expected_kind!r}"
+        f"{step_id}/contract.yaml must declare run: | prompt:; got {expected_kind!r}"
     )
 
     contract = load_contract_for_step(step_id)

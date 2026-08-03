@@ -16,7 +16,7 @@ user-invocable: true
 
 - Optional: `proposed-scenarios.jsonl` next to this run's `state.yaml` (created
   when durable learnings need new eval scenarios).
-- Optional COMPLETION `outputs.backlog_tickets_synced` (list; default `[]`).
+- Optional COMPLETION `outputs.backlog_tickets_synced` (list, when tickets were filed).
   No `learn_result` handle — step `status` plus any written files are enough.
 
 ## Instructions
