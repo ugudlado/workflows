@@ -1,4 +1,4 @@
 id: ux-design
 version: 5
 prompt: ux-designer/SKILL.md
-model: opus
+model: strong

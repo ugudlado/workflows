@@ -1,6 +1,6 @@
 id: learn
 version: 3
 prompt: learn/SKILL.md
-model: sonnet
+model: standard
 default_outputs:
   backlog_tickets_synced: []

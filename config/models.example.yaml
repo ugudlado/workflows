@@ -8,7 +8,7 @@
 #
 # Also usable as a one-off run overlay (unrelated to init):
 #   orchestrator run ORC-84 --agents-config ./models.example.yaml
-# Same shape as the `models:`/`tools:` blocks in config/models.yaml.
+# Same shape as the `models:`/`tools:`/`step_models:` blocks in config/models.yaml.
 
 tools:
   claude:
@@ -34,15 +34,25 @@ tools:
     binary: pi
     args_template: ["--mode", "json", "@{prompt_file}"]
 
-# Each core alias as a candidate chain (D3), most-capable/preferred first.
+# Capability tiers as candidate chains (D3), most-capable/preferred first.
 # `models init` keeps only the candidates whose binary it found on PATH.
 models:
-  opus:
+  strong:
     - { tool: claude, model_id: claude-opus-4-7 }
-  sonnet:
+  standard:
     - { tool: claude, model_id: claude-sonnet-4-6 }
-  haiku:
-    - { tool: claude, model_id: claude-haiku-4-5 }
-  composer:
+  code:
     - { tool: cursor, model_id: composer-2.5 }
     - { tool: claude, model_id: claude-sonnet-4-6 }
+
+# Optional per-step overrides (wins over contract.yaml `model:`).
+step_models:
+  design: strong
+  ux-design: strong
+  code-review: strong
+  explore: standard
+  diagnose: standard
+  learn: standard
+  design-review: standard
+  ux-critique: standard
+  implement: code

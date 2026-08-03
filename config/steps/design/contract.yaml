@@ -1,4 +1,4 @@
 id: design
 version: 2
 prompt: architect/SKILL.md
-model: opus
+model: strong

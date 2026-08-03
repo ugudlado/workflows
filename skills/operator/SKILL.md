@@ -246,7 +246,7 @@ symlink into the pack-root skill:
 id: <id>
 version: 1
 prompt: <id>/SKILL.md # step-local; <id>/ -> ../../../skills/<id>
-model: sonnet
+model: standard
 ```
 
 ```

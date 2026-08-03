@@ -2,6 +2,6 @@ id: design-review
 version: 1
 prompt: design-reviewer/SKILL.md
 # Experiment (2026-07-28, bkg-575 report): rubric/checklist work — trying
-# sonnet; compare review_score drift via results.jsonl correlation rows.
-# Revert to opus if scores drop.
-model: sonnet
+# standard; compare review_score drift via results.jsonl correlation rows.
+# Revert to strong if scores drop.
+model: standard
