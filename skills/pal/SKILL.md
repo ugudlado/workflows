@@ -71,7 +71,7 @@ This skill is composed by other workflows:
 | Workflow                     | Use                                                    | Blocking?                     |
 | ---------------------------- | ------------------------------------------------------ | ----------------------------- |
 | `/specify` (step 8)          | Artifact review in parallel with Claude agents         | Yes (critical findings block) |
-| `phase-review` (step 2)      | Code review in parallel with feature-dev:code-reviewer | Yes (critical findings block) |
+| `code-review` (step 2)      | Code review in parallel with feature-dev:code-reviewer | Yes (critical findings block) |
 | `/complete-feature` (step 2) | Final full-diff review                                 | Advisory only                 |
 
 ## Prerequisites

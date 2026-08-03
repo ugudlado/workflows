@@ -44,6 +44,7 @@ def _load_contract(step_id: str) -> dict | None:
 
 def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_SKILLS_TEST_OVERRIDE", _SKILLS_DIR)
+    monkeypatch.setenv("ORCHESTRATOR_STEP_CONTRACTS_TEST_OVERRIDE", _STEPS_DIR)
     step_ids = _collect_workflow_steps()
     assert step_ids, "No step IDs found in any workflow"
 
@@ -77,6 +78,10 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
             continue
 
         if has_prompt:
+            # Prefer step-local <id>/SKILL.md (symlink layout); else skills search.
+            local = os.path.join(_STEPS_DIR, step_id, contract["prompt"])
+            if os.path.isfile(local):
+                continue
             try:
                 resolve_prompt_file(contract["prompt"])
             except ContractError as exc:

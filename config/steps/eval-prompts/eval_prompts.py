@@ -59,24 +59,6 @@ def completed_step_ids(state: dict) -> list[str]:
     return seen
 
 
-def _prompt_name(steps_root: Path, step_id: str) -> str:
-    """The pack dir ref from a step's contract `prompt:`, else "" for script steps.
-
-    `prompt:` is a relative .md path (e.g. `design/SKILL.md`); the pack is the
-    file's parent dir. A bare `foo.md` at a skills root has no pack dir.
-    """
-    try:
-        with open(steps_root / step_id / "contract.yaml", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-    except OSError:
-        return ""
-    ref = str(data.get("prompt") or "")
-    if not ref:
-        return ""
-    parent = str(Path(ref).parent)
-    return "" if parent == "." else parent
-
-
 def _config_root() -> Path:
     """The config/ dir this step was dispatched from.
 
@@ -93,8 +75,7 @@ def _config_root() -> Path:
 
 def _prompt_search_dirs(repo_root: str, config_root: Path) -> list[Path]:
     """Prompt search path: engine-exported ORCHESTRATOR_PROMPT_PATH when set,
-    else the same default order as parser.prompt_search_dirs (<repo>/skills
-    shadows the checkout)."""
+    else <repo>/skills then <pack>/skills (sibling of config/)."""
     explicit = os.environ.get("ORCHESTRATOR_PROMPT_PATH") or os.environ.get(
         "ORCHESTRATOR_SKILLS_TEST_OVERRIDE"
     )
@@ -103,10 +84,49 @@ def _prompt_search_dirs(repo_root: str, config_root: Path) -> list[Path]:
     dirs: list[Path] = []
     if repo_root:
         dirs.append(Path(repo_root) / "skills")
-    engine_skills = config_root.parent / "skills"
-    if engine_skills not in dirs:
-        dirs.append(engine_skills)
+    pack_skills = config_root.parent / "skills"
+    if pack_skills not in dirs:
+        dirs.append(pack_skills)
     return dirs
+
+
+def _resolve_pack_dir(
+    steps_root: Path, step_id: str, search_dirs: list[Path]
+) -> Path | None:
+    """Absolute pack dir for a prompt step, or None.
+
+    Resolution order (first directory hit wins — a repo shadow without
+    ``scenarios/`` means "do not evaluate", never fall through):
+
+    1. ``<search_dir>/<step_id>`` (repo / override shadow by step id)
+    2. Step-local ``prompt:`` file's parent (e.g. ``explore/SKILL.md`` symlink)
+    3. ``<search_dir>/<prompt-parent>`` for legacy ``prompt: learn/SKILL.md``
+    """
+    for root in search_dirs:
+        by_step = root / step_id
+        if by_step.is_dir():
+            return by_step.resolve()
+
+    step_dir = steps_root / step_id
+    try:
+        with open(step_dir / "contract.yaml", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except OSError:
+        return None
+    ref = str(data.get("prompt") or "").strip()
+    if not ref:
+        return None
+    local = step_dir / ref
+    if local.is_file():
+        return local.parent.resolve()
+    parent = Path(ref).parent
+    if str(parent) == ".":
+        return None
+    for root in search_dirs:
+        candidate = root / parent
+        if candidate.is_dir():
+            return candidate.resolve()
+    return None
 
 
 def evaluable_packs(
@@ -117,19 +137,13 @@ def evaluable_packs(
     search_dirs = _prompt_search_dirs(repo_root, config_root)
     packs: list[tuple[str, Path]] = []
     for step_id in completed_step_ids(state):
-        name = _prompt_name(steps_root, step_id)
-        if not name:
+        pack_dir = _resolve_pack_dir(steps_root, step_id, search_dirs)
+        if pack_dir is None:
             continue
-        for root in search_dirs:
-            candidate = root / name
-            if not candidate.is_dir():
-                continue
-            # First hit wins: <repo>/skills shadows the engine checkout, so a
-            # repo-local pack without scenarios/ means "nothing to evaluate",
-            # never "fall through to the checkout's copy".
-            if (candidate / "scenarios").is_dir():
-                packs.append((step_id, candidate.resolve()))
-            break
+        # Caller already received the first search hit; only evaluate when
+        # that pack actually has scenarios/.
+        if (pack_dir / "scenarios").is_dir():
+            packs.append((step_id, pack_dir))
     return packs
 
 

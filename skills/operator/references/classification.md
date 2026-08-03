@@ -17,10 +17,12 @@ Same inputs → same action. File ops, fixed CLI, git, webhooks, ticket status.
 Anything requiring LLM reasoning: summarizing, critiquing, deciding relevance,
 writing prose, choosing between plausible options.
 
-- `prompt:` is a relative path to a **`.md` file** (`<name>/SKILL.md` or
-  `<name>/prompt.md`), resolved through the prompt search dirs (ORCHESTRATOR_PROMPT_PATH) — not
-  a file under the step dir.
-- The charter inside it is `SKILL.md` if present, else `prompt.md`.
+- `prompt:` is a relative path to a **`.md` file**. Prefer the step-local
+  form `<id>/SKILL.md` where `config/steps/<id>/<id>` symlinks to
+  `skills/<id>` at the pack root. Legacy skills-search refs
+  (`<name>/SKILL.md` without a step-local symlink) still resolve via
+  `<repo>/skills` then `<pack>/skills`.
+- The charter inside the skill dir is `SKILL.md` if present, else `prompt.md`.
 - Workflow entry: `- prompt: ux-critique`, or `- id: ux-critique` with
   `prompt: ux-critique` when you need `on_failure`/`max_retries`.
 - Agent role (mental model): capability + `-er`/`-or` → ux-critiquer,

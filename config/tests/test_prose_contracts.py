@@ -60,9 +60,9 @@ def test_fr6_skill_steps_use_orchestrator_done():
     completion protocol (replaces the removed skills/developer agent).
     """
     for skill_file in (
-        "skills/design/SKILL.md",
-        "skills/implement/SKILL.md",
-        "skills/ux-design/SKILL.md",
+        "skills/architect/SKILL.md",
+        "skills/developer/SKILL.md",
+        "skills/ux-designer/SKILL.md",
     ):
         content = _read(skill_file)
         assert "orchestrator done" in content or "COMPLETION:" in content, (
@@ -120,7 +120,7 @@ _ORC63_PRUNED_CONTRACTS = [
     "diagnose",
     # execute-next-task removed in ORC-65 T-9; no longer a step contract.
     "ux-design",
-    "review",
+    "code-review",
     "generate-project-yaml",
     "install-tooling",
     "ux-critique",

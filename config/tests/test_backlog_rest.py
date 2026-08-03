@@ -213,7 +213,7 @@ def test_correlation_line_carries_full_key():
 
 def test_correlation_line_omits_absent_parts():
     """Missing coordinates drop out rather than appearing as empty values."""
-    got = _correlation_line({"ORCHESTRATOR_STEP_ID": "review"})
+    got = _correlation_line({"ORCHESTRATOR_STEP_ID": "code-review"})
     assert got == "correlation: ticket=ORC-125 step=review"
     assert "change=" not in got
 

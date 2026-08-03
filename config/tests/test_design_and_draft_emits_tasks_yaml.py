@@ -1,6 +1,6 @@
 """T-2 regression-guard: design skill emits tasks.yaml.
 
-Verifies that the skill-step (contract.yaml + pack/SKILL.md):
+Verifies that the skill-step (contract.yaml + <id>/SKILL.md):
   - lists tasks.yaml in outputs
   - mentions tasks.yaml in the instruction body
   - mentions tasks.yaml in the verify block
@@ -16,7 +16,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 _STEP_DIR = os.path.join(_REPO_ROOT, "config", "steps", "design")
 _STEP_FILE = os.path.join(_STEP_DIR, "contract.yaml")
-_SKILL_FILE = os.path.join(_REPO_ROOT, "skills", "design", "SKILL.md")
+_SKILL_FILE = os.path.join(_REPO_ROOT, "skills", "architect", "SKILL.md")
 
 
 def _load_step() -> dict:
@@ -25,7 +25,7 @@ def _load_step() -> dict:
 
 
 def _load_instruction() -> str:
-    """Skill instruction body lives in skills/design/SKILL.md."""
+    """Skill instruction body lives in skills/architect/SKILL.md."""
     step = _load_step()
     if step.get("instruction"):
         return step["instruction"]

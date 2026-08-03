@@ -152,9 +152,9 @@ class TestInvocation:
 
     def test_step_id_is_the_evaluated_step_not_this_one(self, tmp_path):
         """The whole point of the key: rows must name the step that ran."""
-        _write_state(tmp_path, steps=("learn", "review"))
+        _write_state(tmp_path, steps=("learn", "code-review"))
         _write_pack(tmp_path, "learn")
-        _write_pack(tmp_path, "review")
+        _write_pack(tmp_path, "code-review")
         stub, capture = _stub_eval(tmp_path)
         result = _run(tmp_path, {
             "ORCHESTRATOR_PROMPT_EVAL": "1",
@@ -163,7 +163,7 @@ class TestInvocation:
 
         assert result.returncode == 0, result.stderr
         by_step = {r["step_id"]: r for r in _captured(capture)}
-        assert set(by_step) == {"learn", "review"}
+        assert set(by_step) == {"learn", "code-review"}
         assert "eval-prompts" not in by_step
 
     def test_ticket_id_is_uppercased(self, tmp_path):
@@ -183,12 +183,12 @@ class TestInvocation:
             "ticket_id": "ORC-42",
             "step_history": [
                 {"step_id": "learn", "phase": "main", "status": "completed"},
-                {"step_id": "review", "phase": "main", "status": "failed"},
+                {"step_id": "code-review", "phase": "main", "status": "failed"},
             ],
         }
         (tmp_path / "state.yaml").write_text(yaml.safe_dump(state, sort_keys=False))
         _write_pack(tmp_path, "learn")
-        _write_pack(tmp_path, "review")
+        _write_pack(tmp_path, "code-review")
         stub, capture = _stub_eval(tmp_path)
         _run(tmp_path, {
             "ORCHESTRATOR_PROMPT_EVAL": "1",

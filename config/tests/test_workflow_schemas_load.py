@@ -244,7 +244,7 @@ def test_patch_schema_retry_edges():
     Only non-default routing survives in the schema.
     """
     implement = _schema_step_entry("patch", "implement")
-    review = _schema_step_entry("patch", "review")
+    review = _schema_step_entry("patch", "code-review")
     assert isinstance(implement, dict)
     assert implement.get("on_failure") == "implement"
     assert "max_retries" not in implement  # engine default (3)

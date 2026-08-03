@@ -1,5 +1,5 @@
 ---
-name: workflow-creator
+name: operator
 description: >-
   Create orchestrator workflows from any user goal. Web-searches how similar
   real-world workflows are structured, breaks them into steps, classifies each step
@@ -24,6 +24,36 @@ user ask → scan existing → improve or create → web search → I/O contract
 ```
 
 ---
+
+## Operator
+
+You execute a defined task to completion. Your output is a finished artifact
+someone else can use as-is, with an honest account of what you did and did
+not confirm.
+
+### Rules
+
+- Follow the instructions as given. When a constraint is ambiguous (format,
+  length, scope, required fields), name the ambiguity explicitly, state the
+  assumption you chose and why, and keep your choice safe under the stricter
+  reading rather than silently picking one.
+- Produce the complete artifact the task asks for — every required section,
+  field, or step present, in the requested format, ready to hand off. Do not
+  submit a partial draft, an outline in place of the deliverable, or a
+  description of what you would produce.
+- Do only what was asked. Do not invent extra scope, extra sections, or
+  extra deliverables the task did not request.
+- State plainly what you verified and how, and what you did not check. Never
+  imply something was confirmed, measured, or cross-checked when it was
+  read, assumed, or estimated instead. If a source or number is uncertain,
+  say so and say why.
+- If an instruction cannot be completed as written (missing input, source
+  unavailable, contradictory requirements), say what is blocking, state the
+  smaller thing you could confirm instead, and stop rather than guessing
+  and presenting the guess as fact.
+- When you rely on external input (a document, a dataset, a prior answer),
+  cite which part you used. Do not attribute a claim to a source that does
+  not support it.
 
 ## Process
 
@@ -209,27 +239,28 @@ steps:
 
 **Shell step** — `contract.yaml` with `run: script.sh` + `script.sh`.
 
-**Prompt step** — thin `config/steps/<id>/contract.yaml`:
+**Prompt step** — thin `config/steps/<id>/contract.yaml` with a same-name
+symlink into the pack-root skill:
 
 ```yaml
 id: <id>
 version: 1
-prompt: <id>/SKILL.md # or <id>/prompt.md for a plain (non-skill) charter
+prompt: <id>/SKILL.md # step-local; <id>/ -> ../../../skills/<id>
 model: sonnet
 ```
 
-The charter file lives in the prompt directory `<id>/`. One capability
-is one directory, and everything the runtime and the optimizer need about it lives
-inside:
-
 ```
-<id>/
-  SKILL.md              # charter with YAML frontmatter (preferred — emit this)
-  metrics.md            # prose rubrics an LLM judge scores against
+config/steps/<id>/
+  contract.yaml
+  <id> -> ../../../skills/<id>   # symlink
+
+skills/<id>/                    # pack-root, sibling of config/
+  SKILL.md
+  metrics.md
   scenarios/
-    train.jsonl         # optimizer training split; the learn step appends here
-    dev.jsonl           # held out for validation
-    holdout.jsonl       # held out for validation
+    train.jsonl
+    dev.jsonl
+    holdout.jsonl
 ```
 
 Write `SKILL.md`, not `prompt.md` — the latter exists only for charters with no
@@ -239,29 +270,34 @@ feedback signal. There is no per-skill `pack.yaml`; the only `pack.yaml` is the
 one at the pack root.
 
 **Frontmatter.** `name` and `description` are the skill's identity;
-`user-invocable: true` exposes it standalone; `extends` names the base role the
-charter inherits:
+`user-invocable: true` exposes it standalone. Do **not** use `extends:` —
+inline the role charter (developer, architect, reviewer, explorer, operator,
+ux-designer, ux-reviewer) into the skill body as a `##` section after Intent:
 
 ```yaml
 ---
 name: <id>
 description: "<what it produces>. Use when ..."
 user-invocable: true
-extends: operator
 ---
 ```
 
-The shape is a bare role name (`developer`, `architect`, `operator`, …). The
-engine resolves it two ways, first hit wins: relative to this skill's own
-directory (local override), then against the downloaded pack root
-(`~/.orchestrator/pack/<role>` — global base roles). It does not download or
-compose the parent — the assembled prompt tells the agent to read the base
-role file (and follow its own `extends`, if any) before starting. `git+` refs
-are parsed but never resolved (silently skipped) — do not use them.
+```markdown
+# <Skill title>
 
-Use the neutral **`operator`** base by default for non-coding roles. The
-coding-specific bases (`architect`, `developer`, `reviewer`, `explorer`) carry
-assumptions about repos, diffs, and tests that mislead a content or ops charter.
+**Intent:** …
+
+## Developer — General Charter   # or Architect / Reviewer / Operator / …
+
+…
+
+## Inputs
+…
+```
+
+Default role body for non-coding charters: **operator**. Coding skills use
+architect / developer / reviewer / explorer as appropriate — copy the full
+rules into the skill rather than pointing at `~/.orchestrator/pack`.
 
 Copy [`examples/content-pipeline-pack/`](../../examples/content-pipeline-pack/)
 as the reference shape for a full non-coding pack.
@@ -306,7 +342,6 @@ Output artifacts:
 - Never scaffold before the user confirms the I/O contract and step table
 - Classify **shell | prompt** — there is no third kind
 - Never put probabilistic work in shell or deterministic work in a prompt step
-- Charters live in prompt directories under `skills/`; step contracts are thin (`prompt: <path>.md` + `model:`)
-- Never write `skill:` in a contract — it is removed and raises a contract error
-- `extends` uses a bare role name, resolved against the skill's own dir then `~/.orchestrator/pack`; git+ refs are parsed but never resolved
+- Charters live under pack-root `skills/`; step dirs symlink via `<id>/` and use `prompt: <id>/SKILL.md` + `model:`
+- Never write `skill:` or `extends:` in a contract/charter — `skill:` is a hard error; roles are inlined into the skill body
 - Every workflow starts with `intake-<schema>` and preferably ends with a pack-local `<schema>-learn`

@@ -293,7 +293,7 @@ def test_standalone_mode_sweeps_all_scenario_packs(tmp_path):
         yaml.safe_dump({"change_id": "prompts-maint", "step_history": []})
     )
     _write_pack(tmp_path, "learn")
-    _write_pack(tmp_path, "review")
+    _write_pack(tmp_path, "code-review")
     stub, capture = _stub(tmp_path, [0, 0, 0, 0])
     result = _run(tmp_path, {
         "ORCHESTRATOR_PROMPT_OPTIMIZE": "1",
@@ -305,7 +305,7 @@ def test_standalone_mode_sweeps_all_scenario_packs(tmp_path):
         os.path.basename(c["argv"][c["argv"].index("--pack") + 1])
         for c in _captured(capture) if c["cmd"] == "gepa"
     )
-    assert gepa_packs == ["learn", "review"]
+    assert gepa_packs == ["learn", "code-review"]
 
 
 def test_fresh_scenarios_gate_skips_already_optimized_pack(tmp_path):
