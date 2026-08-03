@@ -70,7 +70,7 @@ models:
     cache_creation_usd: 0.0
     effective_from: "2025-01-01T00:00:00"
 
-  # Cursor's first-party agentic-coding model (cursor-agent subprocess).
+  # Cursor's first-party agentic-coding model (cursor-agent tool).
   # Rates per cursor.com/docs/models-and-pricing; Composer bills no cache write.
   - model_id: composer-2.5
     input_usd: 0.5

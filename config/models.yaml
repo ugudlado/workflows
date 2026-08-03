@@ -1,8 +1,8 @@
 # Model routing — single source of truth for how a model alias is routed
-# to a subprocess tool and concrete model-id.
+# to a tool and concrete model-id.
 #
 # Steps reference an alias (e.g. `model: opus`) in contract.yaml; this file
-# resolves it to a subprocess + model_id at dispatch time. The alias exists so a
+# resolves it to a tool + model_id at dispatch time. The alias exists so a
 # model swap is one edit here, not one per contract.
 #
 # An alias must name a MODEL, never a behavior. `auto: {model_id: auto}` used to
@@ -16,23 +16,23 @@
 #   - orchestrator_next/run_loop.py                      (models, tools)
 
 # ── Model routing ──────────────────────────────────────────────────
-# subprocess: tool binary for the dispatch loop (run_loop.py) — see tools: below
-# model_id:   concrete model identifier passed to the subprocess
+# tool:     key under tools: below — binary for the dispatch loop (run_loop.py)
+# model_id: concrete model identifier passed to that tool
 models:
   # tools: Read Write Edit Grep Glob Bash WebSearch WebFetch SendMessage
   #        mcp__plugin_context7_context7__resolve-library-id mcp__plugin_context7_context7__query-docs
   #        mcp__pal__thinkdeep mcp__pal__consensus
-  opus: { model_id: claude-opus-4-7, subprocess: claude }
+  opus: { model_id: claude-opus-4-7, tool: claude }
 
   # tools: Read Write Edit Grep Glob Bash WebSearch WebFetch
   #        mcp__plugin_context7_context7__resolve-library-id mcp__plugin_context7_context7__query-docs
   #        mcp__plugin_claude-mem_mcp-search__search mcp__plugin_claude-mem_mcp-search__get_observations
-  sonnet: { model_id: claude-sonnet-4-6, subprocess: claude }
+  sonnet: { model_id: claude-sonnet-4-6, tool: claude }
 
   # tools: Read Write Edit Grep Glob Bash WebSearch
-  haiku: { model_id: claude-haiku-4-5, subprocess: claude }
+  haiku: { model_id: claude-haiku-4-5, tool: claude }
 
-  # subprocess: cursor-agent CLI, pinned to a concrete model.
+  # tool: cursor — cursor-agent CLI, pinned to a concrete model.
   # Was `auto: {model_id: auto}` — cursor-agent never discloses which model it
   # picked (its json output has no model field; stream-json reports the literal
   # "Auto"), so the step was unpriceable and silently billed at Opus rates.
@@ -43,9 +43,9 @@ models:
   #        mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__navigate_page
   #        mcp__chrome-devtools__get_console_message mcp__chrome-devtools__evaluate_script
   #        mcp__plugin_claude-mem_mcp-search__search mcp__plugin_claude-mem_mcp-search__get_observations
-  composer: { model_id: composer-2.5, subprocess: cursor }
+  composer: { model_id: composer-2.5, tool: cursor }
 
-# ── Subprocess tool invocation (dispatch loop: run_loop.py) ────────
+# ── Tool invocation (dispatch loop: run_loop.py) ───────────────────
 tools:
   claude:
     binary: claude
