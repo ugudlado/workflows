@@ -35,7 +35,7 @@
     "expect": [
       "Checks the archive for prior completion before doing any codebase survey",
       "Writes a short discovery.md noting the prior archive_path instead of redoing the survey",
-      "Returns COMPLETION with already_completed: true and the archive_path in discovery_result",
+      "Writes already_completed: true and the archive_path into discovery.md, then returns COMPLETION with artifacts: [discovery.md]",
       "Does not re-survey the codebase or regenerate a full discovery brief"
     ]
   },
@@ -94,7 +94,7 @@
     "scenario": "You finish the survey and have a clear picture. It is tempting to reply with the discovery brief as a well-formatted chat message and call the step done.",
     "expect": [
       "Writes the brief to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md",
-      "Returns COMPLETION with discovery_result: {path: \"discovery.md\"} and artifacts listed",
+      "Returns COMPLETION with artifacts: [discovery.md] (no discovery_result handle)",
       "Does not deliver the brief as chat prose",
       "Verifies required sections are populated before returning COMPLETION"
     ]

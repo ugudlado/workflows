@@ -1,8 +1,7 @@
 ---
-name: design
+name: architect
 description: "Produce design.md and tasks.yaml from discovery. Use when designing a feature, drafting an approach, or breaking work into tasks."
 user-invocable: true
-extends: architect
 ---
 
 # Design and Draft Artifacts
@@ -11,24 +10,43 @@ extends: architect
 (design.md, tasks.yaml) in a single architect pass. Show artifacts to user for review
 on interactive schemas (feature/bugfix); autopilot runs straight through.
 
+## Architect
+
+You design changes before they are implemented. Your output is a design another
+developer can build from without guessing.
+
+### Rules
+
+- Name every ambiguous constraint (units, types, boundaries) explicitly, state
+  the assumption you chose and why, and keep the design safe under the stricter
+  interpretation when in doubt.
+- Design to the acceptance criterion, not the ticket's suggested mechanism.
+  Prefer extending an existing working mechanism over introducing a new layer;
+  reserve new infrastructure for a stated, proven need.
+- When decomposing work for parallel implementation, identify shared-file
+  conflict risk up front and sequence, isolate, or assign a single owner for
+  those edits, with an explicit reconciliation step.
+- State tradeoffs honestly and recommend by context, not by novelty.
+
 ## Inputs
 
-- `discovery_result` — handle from the explore/diagnose step.
-- `discovery.md` at `spec/changes/<slug>/discovery.md` — the discovery brief this step
-  reads for constraints, integration points, and recommended approach.
+- `discovery.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`
+  (`spec/changes/<slug>/discovery.md`) — the discovery brief this step reads for
+  constraints, integration points, and recommended approach.
 - Ticket body at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
   (`spec/changes/<slug>/ticket-context.md`) when present — written by
   `load-ticket-context`. Source of truth for scope and ACs.
 
 ## Outputs
 
-- `updated_artifact_set` — list of artifact files generated this pass.
-- `design_direction` — name of the selected design approach.
-- `complexity` — complexity rating of the selected approach (XS/S/M/L/XL).
-- Artifact `design.md` at `spec/changes/<slug>/design.md`
-  (`$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`).
-- Artifact `tasks.yaml` at `spec/changes/<slug>/tasks.yaml`
-  (`$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml`).
+- Artifact `design.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`
+  (`spec/changes/<slug>/design.md`) — includes Approaches Considered and
+  Selected Approach (name, complexity XS–XL, rationale).
+- Artifact `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml`
+  (`spec/changes/<slug>/tasks.yaml`).
+- `discovery.md` Key Decisions updated with the chosen direction.
+  No COMPLETION `design_direction` / `complexity` / `updated_artifact_set`
+  handles — those live in the files above.
 
 ## Flags
 
@@ -63,8 +81,10 @@ APPROACH:
    d. On further ties: select alphabetically by name.
    e. Document criteria, values, and selection.
 
-4. Record the chosen direction and rationale in discovery.md's "Key Decisions" section
-   per the Discovery Brief Format Contract in explore/SKILL.md.
+4. Record the chosen direction, complexity (XS/S/M/L/XL), and rationale in
+   discovery.md's "Key Decisions" section per the Discovery Brief Format
+   Contract in explore/SKILL.md. Mirror the same selection under design.md
+   Approaches Considered → Selected Approach.
 
 ## Part 2: Artifact Generation
 
@@ -75,14 +95,14 @@ APPROACH:
 
 6. For each file needing generation:
    a. Read the template:
-   - design.md → design/templates/$SCHEMA/design.md
-   - tasks.yaml → design/templates/$SCHEMA/tasks.yaml
+   - design.md → architect/templates/$SCHEMA/design.md
+   - tasks.yaml → architect/templates/$SCHEMA/tasks.yaml
      b. Read the artifact's format contract before writing it (full section list,
      field rules, and traceability/validation rules live there):
      - Producing design.md? First Read
-       `design/reference/design-format.md`.
+       `architect/reference/design-format.md`.
      - Producing tasks.yaml? First Read
-       `design/reference/tasks-format.md`.
+       `architect/reference/tasks-format.md`.
        c. Generate using available context (discovery brief, design direction, change description).
        d. Write to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/<file>.
 
@@ -94,10 +114,14 @@ APPROACH:
      High-Level Design (Architecture Overview, Key Abstractions) → Low-Level Design
      (Components, Data Flow, State Management, Error Handling) → Constraints →
      Trade-offs → Acceptance Criteria (each `AC-N` with `[traces: UC-N]`) →
-     Decisions → Open Questions.
+     Decisions → Open Questions → optional `## Review` stub (owned by
+     design-review; when regenerating after `refresh_artifacts`, read prior
+     `## Review` findings, address them in the design body, then clear or leave
+     a stub — do not invent verdicts/scores).
    - tasks.yaml top-level: `version: 1`, `tasks: [...]`. Per task, required fields:
      `id` (`T-<N>`/`fix-<N>`), `title`, `files`, `verify`; optional: `depends_on`,
-     `test_scenarios`, `why`, `change`, `status`.
+     `test_scenarios`, `why`, `change`, `status`, `reviews` (code-review owned —
+     do not invent reviewer comments at design time).
 
 7. Generate tasks.yaml:
    - Read design.md for approach, component breakdown, and acceptance criteria.
@@ -107,7 +131,7 @@ APPROACH:
    - If ux-artifacts.yaml exists: reference ux-prototype.html in UI task descriptions.
    - Generate the fewest tasks that cover all acceptance criteria.
    - Write tasks.yaml using the Tasks YAML Format Contract (Read
-     `design/reference/tasks-format.md`).
+     `architect/reference/tasks-format.md`).
    - When tdd_required: every implementation task has a preceding test task.
    - RED-task rule: a RED task's `verify` command MUST exit 0 at commit time.
      Use the target runner's pending-test convention — pytest:
@@ -118,27 +142,16 @@ APPROACH:
      design-review retries on BKG-423, BKG-549, and BKG-575.
      <!-- promoted: 2026-07-28 from scenarios tdd-red-needs-xfail / tdd-red-bun-test-todo-not-plain-test / tdd-red-runner-convention-check -->
 
-8. Return COMPLETION (driver calls orchestrator done).
-   The COMPLETION `outputs:` block MUST carry all five declared outputs:
-   - `design.md` and `tasks.yaml` — path-named artifacts; the value is the
-     relative path the step wrote (e.g. `spec/changes/$CHANGE_ID/tasks.yaml`).
-   - `updated_artifact_set` — the list of artifact files generated this pass.
-   - `design_direction` — the name of the selected design approach.
-   - `complexity` — the complexity rating of the selected approach (XS/S/M/L/XL).
-     Omitting any of these makes `orchestrator done` reject the step with
-     `missing_outputs` (exit 3).
-
+8. Return COMPLETION (driver calls orchestrator done):
    ```
    COMPLETION:
      status: completed
-     outputs:
-       design.md: spec/changes/<change_id>/design.md
-       tasks.yaml: spec/changes/<change_id>/tasks.yaml
-       updated_artifact_set: [design.md, tasks.yaml]
-       design_direction: "<selected approach name>"
-       complexity: <XS|S|M|L|XL>
+     artifacts: [design.md, tasks.yaml]
    ```
-
+   Selected approach name and complexity must already be written into
+   `design.md` (Selected Approach) and `discovery.md` (Key Decisions).
+   Do not emit `design_direction`, `complexity`, `updated_artifact_set`, or
+   path-keyed `outputs:` entries — `artifacts` is enough.
 ## Part 3: Artifact Review (interactive schemas only)
 
 9. If state.yaml's `schema` is `autopilot`: skip this pause and return STATUS:
@@ -161,7 +174,7 @@ APPROACH:
 - Resolve major design decisions before implementation begins — do not defer to the implementation phase.
 - Tasks must be small, verifiable, and ordered.
 - Attach verification criteria per task.
-- Output MUST follow the Tasks YAML Format Contract in `design/reference/tasks-format.md`.
+- Output MUST follow the Tasks YAML Format Contract in `architect/reference/tasks-format.md`.
 - When flags.bugfix is true: first task MUST be the regression test, second task MUST be the fix. Order matters.
 - When spec or design introduces a new archive/state path for any producer (autopilot, sub-workflow), grep existing consumer globs (e.g., `spec/changes/archive/*/state.yaml`) and confirm the new path is matched before committing the artifact. Otherwise downstream consumers (telemetry, /learn) silently skip the new producer.
 - SQL sketches in design.md that reference specific field names must be validated against a live row from the target DB (or schema file) before finalizing. Add an explicit note in the task or run a one-query T-0 validation — field name drift between sketch and schema is a common first-review failure.
@@ -173,7 +186,7 @@ APPROACH:
 - In TDD workflows, every RED-phase task (a test task whose verify command is expected to fail until the paired GREEN task runs) MUST include in its `change:` field an explicit instruction to mark the tests with `@pytest.mark.xfail(strict=False)`. Without this annotation, the developer agent hits a contract contradiction: the verify command must exit 0 before commit, but RED tests are designed to fail. The xfail marker makes verify pass while the test is in expected-failure state; the xfail-cleanup-is-part-of-tdd-task rule ensures markers are removed at the phase gate. ORC-118: both implement attempts abandoned when this was missing.
 - Before finalizing tasks.yaml, verify that each task's `verify` commands can be satisfied using only the files in that task's `files` list plus files in its `depends_on` chain. A verify command that imports or calls a file not covered by the task's file scope will block the developer agent: implement forbids touching unlisted files, so a failing import makes the verify exit non-zero and the task cannot be committed. ORC-118 T-2 was abandoned because its verify ran `pytest tests/test_parse_completion.py` which imported `orchestrator_next/scripts/workflow/parse-completion.py` — a file the task neither listed nor could touch.
 - When design claims depend on data shapes, join keys, field names, or call-site behavior in existing code or archived run artifacts, verify them against live evidence before finalizing design.md — add a "Verified System Boundaries" section that records each claim and its verification source (grep result, archived state.yaml, or schema file). Unverified shape claims that prove false become critical findings at design-review, forcing a full re-spin. ORC-122: pre-verifying join keys (step_id alignment) and multi-state-file aggregation against real archives enabled a first-pass 9/10 design-review.
-- Phase-gate tasks (tasks whose sole purpose is to verify the full suite passes before phase review) must scope their `verify` commands to the files changed by this feature, not the full test suite, unless the baseline test suite is known-clean. Before writing a phase-gate task with `pytest <full_suite_dir>`, run the suite and confirm it is green at HEAD. If pre-existing failures exist, narrow the verify command to the feature's targeted test file (e.g., `pytest orchestrator_next/tests/test_<feature_module>.py -v`). A phase-gate task with an unsatisfiable verify command blocks implement and forces a phase-review failure — the same outcome as no gate, but with two wasted implement spawns. ORC-119: T-3 required `pytest orchestrator_next/tests/ -q` green but 10 pre-existing failures existed; 2 implement abandons followed.
+- Phase-gate tasks (tasks whose sole purpose is to verify the full suite passes before code-review) must scope their `verify` commands to the files changed by this feature, not the full test suite, unless the baseline test suite is known-clean. Before writing a phase-gate task with `pytest <full_suite_dir>`, run the suite and confirm it is green at HEAD. If pre-existing failures exist, narrow the verify command to the feature's targeted test file (e.g., `pytest orchestrator_next/tests/test_<feature_module>.py -v`). A phase-gate task with an unsatisfiable verify command blocks implement and forces a code-review failure — the same outcome as no gate, but with two wasted implement spawns. ORC-119: T-3 required `pytest orchestrator_next/tests/ -q` green but 10 pre-existing failures existed; 2 implement abandons followed.
 
 ## Verify
 

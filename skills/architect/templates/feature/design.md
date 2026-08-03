@@ -33,7 +33,8 @@ this section captures only what the design needs to stand on its own.}
 
 ### Selected Approach
 
-{Which approach was chosen and WHY. Reference constraints that ruled out alternatives.}
+{Which approach was chosen, its complexity (XS/S/M/L/XL), and WHY.
+Reference constraints that ruled out alternatives.}
 
 ## High-Level Design
 
@@ -84,4 +85,8 @@ this section captures only what the design needs to stand on its own.}
 
 - {Unresolved questions that may affect implementation}
 
-<!-- Format contract: design/prompt.md § Design Format Contract -->
+## Review
+
+_(Filled by design-review — do not author. See design-reviewer/templates/feedback.md.)_
+
+<!-- Format contract: architect/SKILL.md § Design Format Contract -->

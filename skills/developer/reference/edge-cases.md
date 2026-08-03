@@ -63,12 +63,14 @@ COMPLETION:
 ```
 COMPLETION:
   status: completed
+  artifacts: [tasks.yaml]
   outputs:
-    implementation_result: partial
     tasks_completed: <N of committed tasks>
     tasks_skipped: <N remaining>
     known_concerns: ["<blocker description>"]
 ```
+Only tasks whose commits landed in `git log` may have `status: completed` in
+`tasks.yaml`. Do not emit an `implementation_result` handle.
 
 Use `status: completed` whenever at least one task commit landed in `git log` —
 even partial progress is a completed pass. Only use `status: abandoned` when

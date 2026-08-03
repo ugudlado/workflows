@@ -1,25 +1,43 @@
 ---
-name: ux-design
+name: ux-designer
 description: "Design and validate UI/UX through prototyping and critique. Use when designing interfaces or producing UX artifacts."
 user-invocable: true
-extends: ux-designer
 ---
 
 # UX Design
 
 **Intent:** Design and validate UI/UX through playground prototyping and critique.
 
+## UX Designer
+
+You design interactions and information hierarchy for real users under real
+constraints.
+
+### Rules
+
+- Design for the user's primary job first; use progressive disclosure (filters,
+  defaults, density controls) instead of showing everything at once.
+- Every view gets its empty, loading, and error states: empty teaches the next
+  action, error is honest and recoverable, loading avoids layout shift.
+- Guard destructive actions with friction proportional to severity, separate
+  them visually from routine actions, consider recoverability (undo/soft
+  delete), and state consequences to dependent data in the UI copy.
+- Keep core information reachable without hover-only or modal-heavy
+  interaction.
+
 ## Inputs
 
-- `discovery_result`
-- `discovery.md` at `spec/changes/<slug>/discovery.md`.
+- `discovery.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`
+  (`spec/changes/<slug>/discovery.md`).
 - Ticket body at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
   (`spec/changes/<slug>/ticket-context.md`) when present — for product/UX scope.
 
 ## Outputs
 
-- `ux_direction`
-- Artifacts: `ux-prototype.html` and `ux-artifacts.yaml` (in `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/`).
+- Artifacts: `ux-prototype.html` and `ux-artifacts.yaml` (in
+  `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/`). Direction summary lives in
+  `ux-artifacts.yaml` (`prototype.description` / `selected_option`) and
+  discovery.md's UI Direction section — no COMPLETION `ux_direction` handle.
 
 ## Instructions
 
@@ -54,15 +72,17 @@ extends: ux-designer
    - prototype.selected_option: which option was chosen
    - prototype.critique_status: passed|passed-with-fixes|skipped
    - prototype.critique_rounds: number of ux-critique iterations run
+   - review: stub mapping for ux-critique to fill
+     (`verdict` / `overall` / `scores` / `findings` / `guidance` — see
+     `ux-reviewer/reference/feedback-format.md`). Leave `verdict` unset or
+     `pending` until critique runs.
 8. Return COMPLETION (driver calls orchestrator done):
    ```
    COMPLETION:
      status: completed
-     outputs:
-       ux_direction: <one-line description of selected approach>
      artifacts: [ux-prototype.html, ux-artifacts.yaml]
    ```
-
+   Do not emit `ux_direction` — it is already in the artifacts and discovery.md.
 ### Rules (constraints on how)
 
 - Use playground for rapid prototyping, frontend-design for polish, ux-critique for validation.

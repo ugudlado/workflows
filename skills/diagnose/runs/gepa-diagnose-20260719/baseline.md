@@ -10,7 +10,7 @@
 
 ## Outputs
 
-- `discovery_result` — COMPLETION output handle: `{path: "discovery.md"}`.
+- Artifact: `discovery.md` — no separate COMPLETION `*_result` handle.
 - Artifact: `discovery.md` written to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`.
 
 ## Instructions
@@ -79,12 +79,11 @@ Then return COMPLETION:
 ```
 COMPLETION:
   status: completed
-  outputs:
-    discovery_result: {path: "discovery.md"}
   artifacts: [discovery.md]
 ```
 
 Do not return the diagnosis as chat prose — the file is the artifact.
+Do not emit a `discovery_result` (or other `*_result`) output handle.
 
 ### Rules (constraints on how)
 

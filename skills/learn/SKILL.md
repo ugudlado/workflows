@@ -14,7 +14,10 @@ user-invocable: true
 
 ## Outputs
 
-- `learn_result`
+- Optional: `proposed-scenarios.jsonl` next to this run's `state.yaml` (created
+  when durable learnings need new eval scenarios).
+- Optional COMPLETION `outputs.backlog_tickets_synced` (list; default `[]`).
+  No `learn_result` handle — step `status` plus any written files are enough.
 
 ## Instructions
 
@@ -62,8 +65,12 @@ Run the workflow learning pipeline for this completed change.
    COMPLETION:
      status: completed
      outputs:
-       learn_result: <completed|skipped>
+       backlog_tickets_synced: []
    ```
+   If learning was gated off / not listed by the workflow, still return
+   `status: completed` (learning is best-effort). Record the skip reason in
+   chat/logs (`learn_skipped: true`, `learn_error: ...`) — do not invent a
+   `learn_result` output.
 
 ### Rules (constraints on how)
 

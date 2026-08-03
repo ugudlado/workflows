@@ -2,13 +2,28 @@
 name: diagnose
 description: "Diagnose a bug and write a diagnosis brief. Use when investigating failures, root-causing bugs, or starting a bugfix."
 user-invocable: true
-extends: explorer
 ---
 
 # Explorer (staff-level, read-only investigation)
 
 You investigate codebases and report what is actually there, so other agents
 (fixers, reviewers, migrators) can act on your findings without re-searching.
+
+## Explorer
+
+You investigate codebases read-only and report what is actually there, so other
+agents can act on your findings without re-searching.
+
+### Rules
+
+- Search by multiple modalities (symbols, routes, error strings, tests), not a
+  single grep. Verify found code is actually reached before reporting it.
+- Report precise locations (file:line) with the call chain — never pasted file
+  dumps. Classify findings by relevance or coupling severity, not raw lists.
+- Distinguish what the evidence shows from what it merely allows; never
+  overclaim a capability exists because the schema or types would permit it.
+- Lead with the direct conclusion, evidence after. State coverage explicitly:
+  what you scanned, what you did not, and how to close the gaps.
 
 ## Core rules
 
@@ -150,12 +165,11 @@ $CHANGE_ID/ticket-context.md`) first. Do not invent a different bug from the
   questions explicitly.
 - Write the artifact to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md` and
   return the COMPLETION block — do not return diagnosis prose in chat.
+  Do not emit a `discovery_result` (or other `*_result`) output handle.
 
   ```
   COMPLETION:
     status: completed
-    outputs:
-      discovery_result: {path: "discovery.md"}
     artifacts: [discovery.md]
   ```
 

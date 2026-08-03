@@ -12,18 +12,17 @@
 
 ## Outputs
 
-- `discovery_result` — COMPLETION output handle: `{path: "discovery.md"}` (or
-  `{already_completed: true, archive_path: "...", path: "discovery.md"}` on rerun-guard hit).
 - Artifact: `discovery.md` written to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`.
+  On a rerun-guard hit, the file notes `already_completed: true` and the prior
+  `archive_path` — no separate COMPLETION `*_result` handle.
 
 ## Instructions
 
 0. **Rerun guard (do this first):** Under `$REPO_ROOT/spec/changes/archive/`, check whether
    this change already completed (`status: completed` or `mark-change-completed` in
    archived `state.yaml` for the same `change_id` / ticket). If yes, write a short
-   `discovery.md` noting the prior `archive_path`, then return COMPLETION with
-   `outputs.discovery_result: {already_completed: true, archive_path: "...", path: "discovery.md"}`
-   and `artifacts: [discovery.md]`. Do not redo codebase survey.
+   `discovery.md` that records `already_completed: true` and the prior `archive_path`,
+   then return COMPLETION with `artifacts: [discovery.md]`. Do not redo codebase survey.
 1. Search the codebase for files, patterns, and modules relevant to the description.
    First read `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md` (same as
    `spec/changes/<slug>/ticket-context.md`) when it exists — that file is the
@@ -46,8 +45,6 @@
    ```
    COMPLETION:
      status: completed
-     outputs:
-       discovery_result: {path: "discovery.md"}
      artifacts: [discovery.md]
    ```
    Do not return the brief as chat prose — the file is the artifact.

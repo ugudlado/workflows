@@ -2,7 +2,7 @@
 
 The `design.md` file is the single feature artifact — it carries both the design
 ("how") and the Acceptance Criteria. It is a structural contract between
-`design` (producer and task consumer) and `review`
+`design` (producer and task consumer) and `code-review`
 (consumer). The product-level "what & why" (motivation, impact, alternatives at
 the feature level) lives on the Linear/backlog ticket, not in this file.
 
@@ -42,7 +42,8 @@ linear-ticket: HL-XXX
 
 ### Selected Approach
 
-{Which approach was chosen and WHY. Reference constraints that ruled out alternatives.}
+{Which approach was chosen, its complexity (XS/S/M/L/XL), and WHY.
+Reference constraints that ruled out alternatives.}
 
 ## High-Level Design
 
@@ -94,6 +95,10 @@ linear-ticket: HL-XXX
 - {Unresolved questions that may affect implementation}
 ```
 
+`## Review` is appended by design-review using
+`design-reviewer/templates/feedback.md`. Architects may leave a stub; they must
+not invent scores or verdicts there.
+
 ## Field rules
 
 | Field                 | Required   | Format                                                                         |
@@ -103,7 +108,7 @@ linear-ticket: HL-XXX
 | Goals                 | Yes        | Bulleted list, at least one                                                    |
 | Non-Goals             | Yes        | Bulleted list, at least one                                                    |
 | Approaches Considered | Yes        | At least 2 approaches with pros/cons                                           |
-| Selected Approach     | Yes        | References constraints that ruled out alternatives                             |
+| Selected Approach     | Yes        | Name, complexity (XS–XL), and constraints that ruled out alternatives          |
 | Architecture Overview | Yes        | System-level component interaction                                             |
 | Key Abstractions      | Yes        | Core interfaces or patterns introduced                                         |
 | Components            | Contextual | Required when >2 components involved                                           |
@@ -115,6 +120,7 @@ linear-ticket: HL-XXX
 | Acceptance Criteria   | Yes        | Bulleted list, each with `[traces: UC-N]` referencing discovery.md use case(s) |
 | Decisions             | Contextual | Populated when non-obvious choices made                                        |
 | Open Questions        | Yes        | Empty section means no blockers                                                |
+| Review                | Reviewer   | Written only by design-review; see `design-reviewer/reference/feedback-format.md` |
 
 ## Traceability rules
 
@@ -125,4 +131,4 @@ linear-ticket: HL-XXX
 
 ## Consumers
 
-- `review` — reads Acceptance Criteria for AC verification (implement phase) and verifies structural compliance and traceability
+- `code-review` — reads Acceptance Criteria for AC verification (implement phase) and verifies structural compliance and traceability

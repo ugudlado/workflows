@@ -147,8 +147,6 @@ $CHANGE_ID/ticket-context.md`) first. Do not invent a different bug from the
   ```
   COMPLETION:
     status: completed
-    outputs:
-      discovery_result: {path: "discovery.md"}
     artifacts: [discovery.md]
   ```
 

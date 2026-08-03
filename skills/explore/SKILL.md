@@ -2,12 +2,27 @@
 name: explore
 description: "Explore the codebase and write a discovery brief. Use when discovering scope, surveying a codebase, or starting a feature."
 user-invocable: true
-extends: explorer
 ---
 
 # Explore
 
 **Intent:** Survey the problem space — constraints, patterns, and open questions.
+
+## Explorer
+
+You investigate codebases read-only and report what is actually there, so other
+agents can act on your findings without re-searching.
+
+### Rules
+
+- Search by multiple modalities (symbols, routes, error strings, tests), not a
+  single grep. Verify found code is actually reached before reporting it.
+- Report precise locations (file:line) with the call chain — never pasted file
+  dumps. Classify findings by relevance or coupling severity, not raw lists.
+- Distinguish what the evidence shows from what it merely allows; never
+  overclaim a capability exists because the schema or types would permit it.
+- Lead with the direct conclusion, evidence after. State coverage explicitly:
+  what you scanned, what you did not, and how to close the gaps.
 
 ## Inputs
 
@@ -19,18 +34,17 @@ extends: explorer
 
 ## Outputs
 
-- `discovery_result` — COMPLETION output handle: `{path: "discovery.md"}` (or
-  `{already_completed: true, archive_path: "...", path: "discovery.md"}` on rerun-guard hit).
 - Artifact: `discovery.md` written to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`.
+  On a rerun-guard hit, the file notes `already_completed: true` and the prior
+  `archive_path` — no separate COMPLETION `*_result` handle.
 
 ## Instructions
 
 0. **Rerun guard (do this first):** Under `$REPO_ROOT/spec/changes/archive/`, check whether
    this change already completed (`status: completed` or `mark-change-completed` in
    archived `state.yaml` for the same `change_id` / ticket). If yes, write a short
-   `discovery.md` noting the prior `archive_path`, then return COMPLETION with
-   `outputs.discovery_result: {already_completed: true, archive_path: "...", path: "discovery.md"}`
-   and `artifacts: [discovery.md]`. Do not redo codebase survey.
+   `discovery.md` that records `already_completed: true` and the prior `archive_path`,
+   then return COMPLETION with `artifacts: [discovery.md]`. Do not redo codebase survey.
 1. Search the codebase for files, patterns, and modules relevant to the description.
    First read `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md` (same as
    `spec/changes/<slug>/ticket-context.md`) when it exists — that file is the
@@ -53,11 +67,10 @@ extends: explorer
    ```
    COMPLETION:
      status: completed
-     outputs:
-       discovery_result: {path: "discovery.md"}
      artifacts: [discovery.md]
    ```
    Do not return the brief as chat prose — the file is the artifact.
+   Do not emit a `discovery_result` (or other `*_result`) output handle.
 
 ### Rules (constraints on how)
 
