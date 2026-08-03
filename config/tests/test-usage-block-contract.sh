@@ -13,7 +13,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SKILL_FILE="$REPO_ROOT/skills/orchestrate/SKILL.md"
+SKILL_FILE="$REPO_ROOT/skills/archive/orchestrate/SKILL.md"
 
 pass=0
 fail=0
