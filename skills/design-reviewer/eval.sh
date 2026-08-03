@@ -23,7 +23,7 @@ if [[ ! -f "$DESIGN_MD" ]]; then
   exit 1
 fi
 
-# Design Format Contract — required sections (skills/design/prompt.md § Design Format Contract)
+# Design Format Contract — required sections (skills/architect/prompt.md § Design Format Contract)
 REQUIRED_SECTIONS=(
   "## Context"
   "## Goals / Non-Goals"
@@ -58,7 +58,7 @@ if [[ -f "$DESIGN_DIR/discovery.md" ]]; then
   fi
 fi
 
-if ! bash "$SCRIPT_DIR/../../design/pack/validate-tasks-yaml.sh" "$TASKS_YAML"; then
+if ! bash "$SCRIPT_DIR/../architect/validate-tasks-yaml.sh" "$TASKS_YAML"; then
   errors=$((errors + 1))
 fi
 

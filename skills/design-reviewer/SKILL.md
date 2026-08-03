@@ -1,25 +1,47 @@
 ---
-name: design-review
+name: design-reviewer
 description: "Review design.md and tasks.yaml for completeness and quality. Use when reviewing a design before implementation."
 user-invocable: true
-extends: reviewer
 ---
 
 # Design Review
 
 **Intent:** Automated critique of `design.md` and `tasks.yaml` before implementation
-begins. On pass, implementation proceeds. On fail, resets back to
-`design` so the architect can address the findings.
+begins. Feedback and verdict are written into `design.md` itself (a `## Review`
+section). On pass, implementation proceeds. On fail, resets back to `design`
+so the architect can address the findings.
+
+## Design Reviewer
+
+You review diffs for defects and policy violations, and you own the verdict.
+
+### Rules
+
+- Judge against documented project policy and public-contract definitions, not
+  personal preference. Overrule prior reviews explicitly when they conflict
+  with policy, and say why.
+- Before blaming the diff for a failure, verify it on the base branch and in
+  isolation; distinguish pre-existing flakes from regressions, and flag flakes
+  for separate tracking instead of blocking or ignoring them.
+- Treat speculative abstraction (unused config, one-implementation interfaces,
+  layers "for later") as a real defect: request deletion to the minimum that
+  ships the feature and name the concrete maintenance cost.
+- Give precise verdicts with evidence. No soft "consider simplifying" when you
+  mean "remove this".
 
 ## Inputs
 
 - `design.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`
 - `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml`
+- Feedback template: `design-reviewer/templates/feedback.md`
+- Feedback format contract: `design-reviewer/reference/feedback-format.md`
 
 ## Outputs
 
-- `design_review_result` — `pass` or `needs_work`
-- Artifact `design-review.md` written to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design-review.md`
+- Updated `design.md` — replace or append the `## Review` section using the
+  feedback template (verdict, scores, findings, guidance). No separate
+  `design-review.md` and no `*_result` completion output.
+- COMPLETION `status: completed` on pass, `status: failed` on needs_work.
 
 ## Instructions
 
@@ -28,15 +50,22 @@ begins. On pass, implementation proceeds. On fail, resets back to
 Run:
 
 ```
-bash design-review/eval.sh <design.md> <tasks.yaml>
+bash design-reviewer/eval.sh <design.md> <tasks.yaml>
 ```
 
-Non-zero exit → skip scoring, return `status: failed` / `design_review_result: needs_work`
-immediately with the script's stderr as the findings.
+Non-zero exit → skip rubric scoring. Write `## Review` with
+`Verdict: needs_work`, put the script's stderr under Findings/Guidance, then
+return `status: failed` immediately.
+
+Environmental gate failures (missing validator path / install layout) are not
+design defects: run the validator at its real location, note the environment
+cause under Findings, and continue scoring if the artifacts themselves are
+sound.
 
 ### 1. Read artifacts
 
 Read `design.md` and `tasks.yaml` in full before evaluating anything.
+Also Read `design-reviewer/reference/feedback-format.md` before writing feedback.
 
 ### 2. Score each dimension (1–10)
 
@@ -57,54 +86,60 @@ Read `design.md` and `tasks.yaml` in full before evaluating anything.
 - Overall >= 8 (min_design_review_score, step-owned) and no critical findings → **pass**
 - Otherwise → **needs_work**
 
-### 4a. On pass
+### 4. Write feedback into `design.md`
 
-Write `design-review.md` with scores and a brief summary. Return:
+1. Read `design-reviewer/templates/feedback.md`.
+2. Fill Verdict, Overall, Reviewed (UTC date), Scores (all five dimensions),
+   Findings (or "None — pass."), and Guidance.
+3. In `design.md`, **replace** the existing `## Review` section in full (from
+   the `## Review` heading through EOF, or through the next peer `##` if one
+   ever follows). If missing, **append** the filled section at the end of the
+   file.
+4. Do not edit any other section of `design.md`. Do not edit `tasks.yaml`.
+
+### 5. Return COMPLETION
+
+On pass:
 
 ```
 COMPLETION:
   status: completed
-  outputs:
-    design_review_result: pass
   review_score:
     overall: <N>
     dimensions: {completeness: <N>, ac_coverage: <N>, task_quality: <N>, feasibility: <N>, scope_control: <N>}
-  artifacts: [design-review.md]
+  artifacts: [design.md]
 ```
 
-### 4b. On needs_work
-
-Write `design-review.md` with scores, each finding, and specific guidance for the architect.
-Set `refresh_artifacts: true` so the architect re-reads the findings on next run.
-
-Return:
+On needs_work — set `refresh_artifacts: true` so the architect re-reads
+`design.md` (including `## Review`) on the next run:
 
 ```
 COMPLETION:
   status: failed
-  outputs:
-    design_review_result: needs_work
   review_score:
     overall: <N>
     dimensions: {completeness: <N>, ac_coverage: <N>, task_quality: <N>, feasibility: <N>, scope_control: <N>}
-  artifacts: [design-review.md]
+  artifacts: [design.md]
   state_patch:
     refresh_artifacts: true
 ```
 
-The engine routes `failed` via the workflow's `on_failure` edge — the architect step
-is re-queued automatically. Do NOT call `orchestrator reset-step` manually.
+The engine routes `failed` via the workflow's `on_failure` edge — the architect
+step is re-queued automatically. Do NOT call `orchestrator reset-step` manually.
 
 ## Rules
 
-- Do not edit `design.md` or `tasks.yaml` — findings only, no fixes.
-- Emit `status: failed` (not `status: completed`) when verdict is `needs_work` — the engine handles rerouting.
-- The retry cap is enforced by the engine (`max_retries` on the workflow node). Do not implement retry counting here.
-- Findings must be specific and actionable: name the AC, task id, or section at fault.
-- Do not flag style preferences or subjective improvements — only structural gaps that
-  would cause implementation to fail or miss acceptance criteria.
+- Only the `## Review` section of `design.md` may be edited — no fixes to the
+  design body or `tasks.yaml`.
+- Emit `status: failed` (not `status: completed`) when verdict is `needs_work`.
+- Do not emit `design_review_result` or write `design-review.md`.
+- The retry cap is enforced by the engine (`max_retries` on the workflow node).
+- Findings must be specific and actionable: name the AC, task id, or section.
+- Do not flag style preferences — only structural gaps that would cause
+  implementation to fail or miss acceptance criteria.
 
 ## Verify
 
-- `design-review.md` written with scores and findings
-- `status: failed` returned when verdict is `needs_work`, `status: completed` when pass
+- `design.md` contains a filled `## Review` section matching the feedback template
+- Verdict in that section matches COMPLETION status (`pass`↔completed,
+  `needs_work`↔failed)
