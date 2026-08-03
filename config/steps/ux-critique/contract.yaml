@@ -1,4 +1,3 @@
 id: ux-critique
 version: 4
 prompt: ux-reviewer/SKILL.md
-model: standard
