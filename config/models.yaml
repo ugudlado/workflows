@@ -1,95 +1,16 @@
-# Model routing — single source of truth for how a model alias is routed
-# to a tool and concrete model-id.
-#
-# Two layers:
-#   1. models:       capability tiers (strong / standard / code) → tool+model_id
-#   2. step_models:  optional per-step alias override (wins over contract.yaml)
-#
-# Contracts still declare `model: <tier>` as a fallback for schema/tests and
-# older resolvers. Prefer changing step_models (or a tier's model_id) here
-# instead of editing every contract when swapping backends.
-#
-# An alias must name a capability tier, never a behavior. `auto: {model_id: auto}`
-# used to mean "let cursor pick" — cursor then never reported what it picked, so
-# the step was unpriceable and silently billed at Opus rates.
-#
-# Consumers:
-#   - orchestrator_next/pricing.py                       (models)
-#   - ui/dashboard/server.py                             (models)
-#   - orchestrator_next/model_routes.py                  (models, step_models)
-#   - orchestrator_next/run_loop.py                      (models, tools)
-
-# ── Capability tiers ───────────────────────────────────────────────
-# tool:     key under tools: below — binary for the dispatch loop (run_loop.py)
-# model_id: concrete model identifier passed to that tool
-models:
-  # tools: Read Write Edit Grep Glob Bash WebSearch WebFetch SendMessage
-  #        mcp__plugin_context7_context7__resolve-library-id mcp__plugin_context7_context7__query-docs
-  #        mcp__pal__thinkdeep mcp__pal__consensus
-  strong: { model_id: claude-opus-4-7, tool: claude }
-
-  # tools: Read Write Edit Grep Glob Bash WebSearch WebFetch
-  #        mcp__plugin_context7_context7__resolve-library-id mcp__plugin_context7_context7__query-docs
-  #        mcp__plugin_claude-mem_mcp-search__search mcp__plugin_claude-mem_mcp-search__get_observations
-  standard: { model_id: claude-sonnet-4-6, tool: claude }
-
-  # tool: cursor — cursor-agent CLI, pinned to a concrete model.
-  # Was `auto: {model_id: auto}` — cursor-agent never discloses which model it
-  # picked (its json output has no model field; stream-json reports the literal
-  # "Auto"), so the step was unpriceable and silently billed at Opus rates.
-  # Override per run: orchestrator run <id> model.code.model_id=claude-4.5-sonnet
-  # tools: Read Write Edit Grep Glob Bash WebSearch WebFetch
-  #        mcp__plugin_context7_context7__resolve-library-id mcp__plugin_context7_context7__query-docs
-  #        mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__navigate_page
-  #        mcp__chrome-devtools__get_console_message mcp__chrome-devtools__evaluate_script
-  #        mcp__plugin_claude-mem_mcp-search__search mcp__plugin_claude-mem_mcp-search__get_observations
-  code: { model_id: composer-2.5, tool: cursor }
-
-# ── Per-step overrides ─────────────────────────────────────────────
-# step_id → tier alias. When set, wins over that step's contract.yaml `model:`.
-# Omit a step to use the contract default. Point any entry at strong/standard/code
-# to retarget without touching the step contract.
-step_models:
-  design: strong
-  ux-design: strong
-  code-review: strong
-  explore: standard
-  diagnose: standard
-  learn: standard
-  design-review: standard
-  ux-critique: standard
-  implement: code
-
-# ── Tool invocation (dispatch loop: run_loop.py) ───────────────────
 tools:
   claude:
     binary: claude
-    # {prompt} is substituted with the full prompt text
     args_template:
       ["--model", "{model_id}", "-p", "--output-format", "json", "{prompt}"]
-    stdin: none
-    capture: stdout
-
   pi:
     binary: pi
-    # Single-shot JSON event stream (usage/cost parsed from the last turn_end).
-    # Provider/model come from pi's own ~/.pi/agent/settings.json defaults.
     args_template: ["--mode", "json", "@{prompt_file}"]
-    stdin: none
-    capture: stdout
-
   codex:
     binary: codex
-    # {prompt} is substituted with the full prompt text
     args_template: ["exec", "--json", "--prompt", "{prompt}"]
-    stdin: none
-    capture: stdout
-
   cursor:
     binary: cursor-agent
-    # Cursor Agent CLI (non-interactive). Requires `cursor-agent` on PATH.
-    # {model_id} comes from models.<alias>.model_id (e.g. composer-2.5).
-    # Agent must emit a COMPLETION: YAML block on stdout for parse-completion.py.
     args_template:
       [
         "-p",
@@ -100,5 +21,19 @@ tools:
         "--force",
         "{prompt}",
       ]
-    stdin: none
-    capture: stdout
+
+models:
+  strong: { model_id: claude-opus-5, tool: claude }
+  standard: { model_id: claude-sonnet-5, tool: claude }
+  code: { model_id: composer-2.5, tool: cursor }
+
+step_models:
+  design: strong
+  ux-design: strong
+  code-review: strong
+  explore: standard
+  diagnose: standard
+  learn: standard
+  design-review: standard
+  ux-critique: standard
+  implement: code
