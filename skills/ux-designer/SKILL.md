@@ -43,11 +43,11 @@ constraints.
 
 1. Read the discovery brief's "UI Direction" section for context.
    **If the UI Direction is "N/A" or explicitly states no UI components,
-   immediately abandon this step — do NOT generate prototypes or artifacts:**
+   stop this step — do NOT generate prototypes or artifacts:**
    ```
    COMPLETION:
      step_id: ux-design
-     status: abandoned
+     status: failed
      outputs:
        reason: "No UI surface — discovery brief UI Direction is N/A"
    ```
@@ -81,8 +81,11 @@ constraints.
    COMPLETION:
      status: completed
      artifacts: [ux-prototype.html, ux-artifacts.yaml]
+     outputs:
+       reason: "UX prototype and artifacts ready; UI Direction written back to discovery"
    ```
    Do not emit `ux_direction` — it is already in the artifacts and discovery.md.
+   COMPLETION status is only `completed` or `failed`.
 ### Rules (constraints on how)
 
 - Use playground for rapid prototyping, frontend-design for polish, ux-critique for validation.

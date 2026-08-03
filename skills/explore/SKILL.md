@@ -68,9 +68,12 @@ agents can act on your findings without re-searching.
    COMPLETION:
      status: completed
      artifacts: [discovery.md]
+     outputs:
+       reason: "discovery brief written covering constraints, integration points, and open questions"
    ```
    Do not return the brief as chat prose — the file is the artifact.
    Do not emit a `discovery_result` (or other `*_result`) output handle.
+   COMPLETION status is only `completed` or `failed`.
 
 ### Rules (constraints on how)
 

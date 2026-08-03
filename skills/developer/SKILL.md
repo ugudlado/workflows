@@ -81,7 +81,7 @@ project. Project-specific rules live with the project's prompt and learnings.
 ### Pre-flight
 
 1. Read `design.md` for context: goals, acceptance criteria, component breakdown.
-2. **Both `design.md` and `tasks.yaml` absent (patch schema)? Do NOT block or abandon** —
+2. **Both `design.md` and `tasks.yaml` absent (patch schema)? Do NOT block or stop** —
    Read `developer/reference/edge-cases.md` before
    proceeding; it tells you to derive work from `ticket-context.md` instead.
 3. Read `tasks.yaml`. Identify all tasks where `status` is `pending` (or absent).
@@ -90,7 +90,7 @@ project. Project-specific rules live with the project's prompt and learnings.
    scope: treat the latest `reviews[].comment` as the work order for this pass.
 4. Resolve execution order: respect `depends_on` — do not start a task until all
    its dependencies have `status: completed`.
-5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and abandon immediately — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
+5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and return COMPLETION `status: failed` with `outputs.reason` — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
 
 ### Per-task loop
 
@@ -127,6 +127,7 @@ COMPLETION:
   status: completed
   artifacts: [tasks.yaml]
   outputs:
+    reason: "all tasks committed and verified (<N> completed, <N> skipped)"
     tasks_completed: <N>
     tasks_skipped: <N>
     known_concerns: [<list or empty>]
@@ -134,11 +135,10 @@ COMPLETION:
 
 Hit a non-mainline outcome — zero tasks attempted, or partial progress then an
 unrecoverable blocker? Read `developer/reference/edge-cases.md`
-for the abandoned / partial completion forms.
+for the failed / partial completion forms.
 
 Facing a design contradiction, missing design coverage, or scope ambiguity? See
-`developer/reference/edge-cases.md` for the
-escalation-to-architect protocol.
+`developer/reference/edge-cases.md` for returning `status: failed` with a design-input reason.
 
 ## Rules
 

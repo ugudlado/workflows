@@ -108,6 +108,8 @@ COMPLETION:
     overall: <N>
     dimensions: {completeness: <N>, ac_coverage: <N>, task_quality: <N>, feasibility: <N>, scope_control: <N>}
   artifacts: [design.md]
+  outputs:
+    reason: "design review pass — overall <N>"
 ```
 
 On needs_work — set `refresh_artifacts: true` so the architect re-reads
@@ -120,12 +122,15 @@ COMPLETION:
     overall: <N>
     dimensions: {completeness: <N>, ac_coverage: <N>, task_quality: <N>, feasibility: <N>, scope_control: <N>}
   artifacts: [design.md]
+  outputs:
+    reason: "design review needs_work — overall <N>; see ## Review"
   state_patch:
     refresh_artifacts: true
 ```
 
 The engine routes `failed` via the workflow's `on_failure` edge — the architect
 step is re-queued automatically. Do NOT call `orchestrator reset-step` manually.
+COMPLETION status is only `completed` or `failed`.
 
 ## Rules
 

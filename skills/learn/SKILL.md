@@ -65,12 +65,14 @@ Run the workflow learning pipeline for this completed change.
    COMPLETION:
      status: completed
      outputs:
+       reason: "learn cycle finished (or gated off — see logs)"
        backlog_tickets_synced: []
    ```
    If learning was gated off / not listed by the workflow, still return
-   `status: completed` (learning is best-effort). Record the skip reason in
-   chat/logs (`learn_skipped: true`, `learn_error: ...`) — do not invent a
-   `learn_result` output.
+   `status: completed` (learning is best-effort). Put the skip detail in
+   `outputs.reason` and chat/logs (`learn_skipped: true`, `learn_error: ...`) —
+   do not invent a `learn_result` output. COMPLETION status is only
+   `completed` or `failed`.
 
 ### Rules (constraints on how)
 

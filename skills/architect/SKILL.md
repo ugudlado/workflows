@@ -147,11 +147,14 @@ APPROACH:
    COMPLETION:
      status: completed
      artifacts: [design.md, tasks.yaml]
+     outputs:
+       reason: "design.md and tasks.yaml ready for review/implement"
    ```
    Selected approach name and complexity must already be written into
    `design.md` (Selected Approach) and `discovery.md` (Key Decisions).
    Do not emit `design_direction`, `complexity`, `updated_artifact_set`, or
-   path-keyed `outputs:` entries — `artifacts` is enough.
+   path-keyed `outputs:` entries beyond `reason` — `artifacts` plus `reason` is enough.
+   COMPLETION status is only `completed` or `failed`.
 ## Part 3: Artifact Review (interactive schemas only)
 
 9. If state.yaml's `schema` is `autopilot`: skip this pause and return STATUS:

@@ -119,6 +119,7 @@ You review diffs for defects and policy violations, and you own the verdict.
    COMPLETION:
      status: completed
      outputs:
+       reason: "code review pass — overall <N>"
        code_review_report: {verdict: pass}
      review_score:
        overall: <N>
@@ -146,11 +147,13 @@ You review diffs for defects and policy violations, and you own the verdict.
    b. Write tasks.yaml back to disk.
    c. Return COMPLETION with `status: failed` — the engine routes back via the
       workflow's `on_failure` edge. Do NOT implement retry counting here; the
-      engine enforces `max_retries` on the node.
+      engine enforces `max_retries` on the node. COMPLETION status is only
+      `completed` or `failed`.
    ```
    COMPLETION:
      status: failed
      outputs:
+       reason: "code review needs_work — overall <N>; findings queued on tasks"
        code_review_report: {verdict: needs_work}
      review_score:
        overall: <N>

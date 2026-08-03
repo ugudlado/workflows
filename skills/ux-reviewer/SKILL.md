@@ -111,6 +111,8 @@ COMPLETION:
   review_score:
     overall: <N or null if skipped>
   artifacts: [ux-artifacts.yaml]
+  outputs:
+    reason: "ux critique pass (or skipped) — overall <N or null>"
 ```
 
 On needs_work after max retries:
@@ -121,4 +123,7 @@ COMPLETION:
   review_score:
     overall: <N>
   artifacts: [ux-artifacts.yaml]
+  outputs:
+    reason: "ux critique needs_work after max retries — overall <N>"
 ```
+COMPLETION status is only `completed` or `failed`.

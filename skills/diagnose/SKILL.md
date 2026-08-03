@@ -171,7 +171,10 @@ $CHANGE_ID/ticket-context.md`) first. Do not invent a different bug from the
   COMPLETION:
     status: completed
     artifacts: [discovery.md]
+    outputs:
+      reason: "diagnosis written with root cause, impact, and open questions"
   ```
+  COMPLETION status is only `completed` or `failed`.
 
 ## Anti-patterns (what makes an Explorer response fail at staff level)
 

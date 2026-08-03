@@ -6,7 +6,7 @@ Consult this file only when you hit one of the states named below. The mainline
 ## Patch workflow (no design.md / tasks.yaml)
 
 When `design.md` and `tasks.yaml` are both absent, this is a patch-schema run.
-Do NOT block or abandon because design artifacts are missing.
+Do NOT block or stop because design artifacts are missing.
 
 - Read the ticket body from `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
   (`spec/changes/<slug>/ticket-context.md`, written by `load-ticket-context`).
@@ -20,27 +20,23 @@ Pre-flight in this mode: use `ticket-context.md` in place of `design.md` for
 context; derive the pending-task list from its acceptance criteria; then create
 `tasks.yaml` if multiple commits are needed to track progress.
 
-## Escalation to architect
+## Design needs architect input
 
-Escalate (`STATUS: escalate_to_architect`) only for:
+Return COMPLETION `status: failed` only for:
 
 - **Design contradiction** — task instruction conflicts with `design.md`
 - **Missing design coverage** — task requires a decision `design.md` doesn't address
 - **Scope ambiguity** — unclear whether behavior is in/out of scope and wrong
   choice cascades
 
-Do NOT escalate for implementation details, test strategy, or retry failures.
+Do NOT fail for implementation details, test strategy, or retry failures.
 
 ```
-STATUS: escalate_to_architect
-type: <contradiction|missing_coverage|scope_ambiguity>
-task_id: <T-N>
-context: |
-  <what the task requires, what design.md says, why they conflict>
-question: |
-  <single concrete question the architect must answer>
-attempted: |
-  <what you already tried or considered>
+COMPLETION:
+  status: failed
+  outputs:
+    reason: "design input needed (<contradiction|missing_coverage|scope_ambiguity>) — task <T-N>: <single concrete question>"
+    known_concerns: ["<what the task requires, what design.md says, why they conflict>"]
 ```
 
 ## Non-mainline completion forms
@@ -52,7 +48,7 @@ these two forms for the minority outcomes:
 
 ```
 COMPLETION:
-  status: abandoned
+  status: failed
   outputs:
     reason: "<what prevented any work from starting>"
     tasks_completed: 0
@@ -65,6 +61,7 @@ COMPLETION:
   status: completed
   artifacts: [tasks.yaml]
   outputs:
+    reason: "partial progress — <blocker>; committed <N>, skipped <M>"
     tasks_completed: <N of committed tasks>
     tasks_skipped: <N remaining>
     known_concerns: ["<blocker description>"]
@@ -73,5 +70,5 @@ Only tasks whose commits landed in `git log` may have `status: completed` in
 `tasks.yaml`. Do not emit an `implementation_result` handle.
 
 Use `status: completed` whenever at least one task commit landed in `git log` —
-even partial progress is a completed pass. Only use `status: abandoned` when
-zero work was done.
+even partial progress is a completed pass. Use `status: failed` when zero work
+was done. COMPLETION status is only `completed` or `failed`.
