@@ -1,25 +1,44 @@
 ---
-name: review
-description: "Phase quality review against the project quality bar. Use when reviewing implementation quality, scoring a phase, or gating merge readiness."
+name: code-reviewer
+description: "Code review (implementation quality) against the project quality bar. Use when reviewing implementation quality, scoring a phase, or gating merge readiness."
 user-invocable: true
-extends: reviewer
 ---
 
-# Run Phase Review
+# Run Code Review
 
-**Intent:** Run phase quality checks and decide pass/retry.
+**Intent:** Run implementation code-review checks and decide pass/retry.
+
+## Code Reviewer
+
+You review diffs for defects and policy violations, and you own the verdict.
+
+### Rules
+
+- Judge against documented project policy and public-contract definitions, not
+  personal preference. Overrule prior reviews explicitly when they conflict
+  with policy, and say why.
+- Before blaming the diff for a failure, verify it on the base branch and in
+  isolation; distinguish pre-existing flakes from regressions, and flag flakes
+  for separate tracking instead of blocking or ignoring them.
+- Treat speculative abstraction (unused config, one-implementation interfaces,
+  layers "for later") as a real defect: request deletion to the minimum that
+  ships the feature and name the concrete maintenance cost.
+- Give precise verdicts with evidence. No soft "consider simplifying" when you
+  mean "remove this".
 
 ## Inputs
 
-- `task_execution_result`
-- `design.md` (optional, at `spec/changes/<slug>/design.md`)
-- `tasks.yaml` (optional, at `spec/changes/<slug>/tasks.yaml`)
+- `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml` — per-task
+  `status` from implement (source of truth for what landed this pass).
+- `design.md` (optional, at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`)
 
 ## Outputs
 
-- `phase_review_report`
-- Artifact: `phase-review.md` written to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/phase-review.md`.
-
+- `code_review_report` — COMPLETION verdict handle (`pass` / `needs_work` /
+  `incomplete_phase`).
+- Artifact: `code-review.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md`.
+- On needs_work: updated `tasks.yaml` (reopened tasks with `reviews[]` and/or
+  new `fix-N` tasks).
 ## Instructions
 
 1. Scoring config is step-owned (a repo needing a different bar vendors this
@@ -34,7 +53,7 @@ extends: reviewer
    non-zero exit is a critical correctness finding — cannot pass this round.
    If no verify command is discoverable at all: this is itself a critical
    finding in spec_compliance (missing quality gate) — cannot pass this
-   round. Write phase-review.md noting what was searched and what the repo
+   round. Write code-review.md noting what was searched and what the repo
    should document, and return COMPLETION with `status: failed` per step 9
    below.
 3. Score each dimension separately on 1-10 using the same caps and rubric:
@@ -65,7 +84,8 @@ extends: reviewer
      `T-<N> (reason: <category>, attempts: <K>): <last_detail>`
    - Caps correctness dimension score at scoring.critical_cap until each
      quarantined task either:
-     a. Has a fix task appended to tasks.yaml with `status: pending`, OR
+     a. Has been reopened (`status: pending` with a `reviews` entry) or has a
+     pending `fix-N` task covering it, OR
      b. Is explicitly accepted by the user (state.yaml contains
      `quarantine_accepted: ["T-<N>", ...]`); for `autopilot` schema,
      quarantined tasks are treated as accepted automatically — no human gate.
@@ -92,67 +112,78 @@ extends: reviewer
      - Do not trust earlier phase counts.
      - Record fresh search result as evidence.
    - If any AC fails: treat as a critical finding in spec_compliance dimension.
-7. Write the full human-readable report to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/phase-review.md.
-8. If overall >= 8 (min_phase_review_score, step-owned) and no critical findings: PASS.
+7. Write the full human-readable report to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md.
+8. If overall >= 8 (min_code_review_score, step-owned) and no critical findings: PASS.
    Return COMPLETION:
    ```
    COMPLETION:
      status: completed
      outputs:
-       phase_review_report: {verdict: pass}
+       code_review_report: {verdict: pass}
      review_score:
        overall: <N>
        dimensions: {spec_compliance: <N>, correctness: <N>, security: <N>, simplicity: <N>, code_quality: <N>}
-     artifacts: [phase-review.md]
+     artifacts: [code-review.md]
    ```
 9. If FAIL:
-   a. Generate fix tasks: one fix task per finding, each with Finding, Scope, and Approach.
-   Do NOT suggest refactoring or unrelated improvements.
-   b. Append fix tasks to tasks.yaml:
-   - Read $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml.
-   - Find the current last task id (e.g., T-3 or fix-2) for depends_on.
-   - Append new entries with ids like fix-1, fix-2, ... (sequential,
-     based on existing fix-N entries) with depends_on pointing to the
-     current last task id.
-   - Each new task MUST have `status: pending`.
-   - Write tasks.yaml back to disk.
-     c. Return COMPLETION with `status: failed` — the engine routes back via the
-     workflow's `on_failure` edge. Do NOT implement retry counting here; the
-     engine enforces `max_retries` on the node.
+   a. For each finding, record it against `tasks.yaml` (keep `code_review_report`
+      and `code-review.md` as the full report — tasks carry the actionable queue):
+      1. **Prefer reopen** when an existing task owns the finding:
+         - Owner = task whose `files` cover the finding's primary path, or whose
+           `id` is named in the finding. Prefer the most specific completed task.
+         - Set that task's `status: pending`.
+         - Append to its `reviews` list (create the list if absent):
+           `{at: "<ISO-8601 UTC now>", comment: "<actionable finding text>"}`.
+         - Optionally tighten `change` / `verify` when the finding requires it;
+           do not wipe prior fields.
+      2. **Else create** a new `fix-N` task (sequential after existing `fix-*`):
+         - `status: pending`, `depends_on` → current last task id.
+         - `title`, `files`, `verify`, `why: code-review finding`, `change` scoped
+           to the finding (Finding / Scope / Approach in `change` or `comment`).
+         - Seed `reviews` with the same `{at, comment}` entry.
+      3. Do NOT suggest refactoring or unrelated improvements. One finding →
+         one reopen or one new `fix-N` (never both for the same finding).
+   b. Write tasks.yaml back to disk.
+   c. Return COMPLETION with `status: failed` — the engine routes back via the
+      workflow's `on_failure` edge. Do NOT implement retry counting here; the
+      engine enforces `max_retries` on the node.
    ```
    COMPLETION:
      status: failed
      outputs:
-       phase_review_report: {verdict: needs_work}
+       code_review_report: {verdict: needs_work}
      review_score:
        overall: <N>
        dimensions: {spec_compliance: <N>, correctness: <N>, security: <N>, simplicity: <N>, code_quality: <N>}
-     artifacts: [phase-review.md]
+     artifacts: [code-review.md, tasks.yaml]
    ```
 
 ### Rules (constraints on how)
 
-- Target score is 8 (min_phase_review_score, step-owned) — retry until met.
+- Target score is 8 (min_code_review_score, step-owned) — retry until met.
 - Maximum 3 retry rounds (max_retry_rounds, step-owned) — escalate to user if exhausted.
 - Run type-check + test + build commands at every phase boundary before scoring.
 - Capture concrete findings with fix direction — every finding must be actionable.
-- Issues found during verification become new tasks in the current phase. Never skip ahead with unresolved findings.
+- Issues found during verification become reopen/`reviews` entries or new
+  `fix-N` tasks in the current phase. Never skip ahead with unresolved findings.
 - Do not advance with unresolved critical findings — these block phase completion regardless of overall score.
 - When flags.bugfix is true: zero regressions tolerated. No existing tests may break.
-- Fix tasks must be minimal and scoped to the specific failure — no refactoring, no improvements.
+- Fix work must be minimal and scoped to the specific failure — no refactoring, no improvements.
+  Prefer reopen + `reviews[]` over new `fix-N` when a task already owns the files.
 - Score of 10 is a first-pass bonus — only achievable when no retries were used this round.
 - Operate at staff-level review quality — catch architectural issues, not just surface bugs.
 - Artifact structural compliance with format contracts (owned by each producer step's prompt.md) is a review criterion.
 - When a finding requires a new requirement, the fix MUST update design.md (AC + design) and tasks.yaml atomically — partial updates that sync only one artifact leave the feature in an inconsistent state and will fail re-review.
 - For tasks that spec describes as a rewrite, projection, or byte-compatible replacement of an existing producer, AC verification MUST include a value/shape parity check against at least one real payload from the prior implementation — key-presence alone is insufficient. Reviewer must run both the old producer and the new one on a real archived fixture and diff the top-level output keys; any key reduction is an important finding.
-- Before scoring the phase, read tasks.yaml and check if any tasks still have `status: pending`. If any pending tasks exist and are not explicitly quarantined in state.yaml, write phase-review.md with verdict incomplete_phase listing the pending task IDs — return COMPLETION with `status: failed` and outputs.phase_review_report: {verdict: incomplete_phase}, and do NOT include review_score. `status: failed` is required so the `on_failure` edge fires back to implement — without it the dispatcher treats the step as completed and silently advances past the implement phase with tasks still pending. This guards against dispatcher bugs or manual advances that reach review before all tasks are complete. <!-- updated: 2026-05-25, source: orc-76, cycle: 1, repo: orchestrator -->
+- Before scoring the phase, read tasks.yaml and check if any tasks still have `status: pending`. If any pending tasks exist and are not explicitly quarantined in state.yaml, write code-review.md with verdict incomplete_phase listing the pending task IDs — return COMPLETION with `status: failed` and outputs.code_review_report: {verdict: incomplete_phase}, and do NOT include review_score. `status: failed` is required so the `on_failure` edge fires back to implement — without it the dispatcher treats the step as completed and silently advances past the implement phase with tasks still pending. This guards against dispatcher bugs or manual advances that reach code-review before all tasks are complete. <!-- updated: 2026-05-25, source: orc-76, cycle: 1, repo: orchestrator -->
 - Spot audit: pick one `evidence.verified` entry from a completed `implement` step in step_history and re-run its `check` command. A mismatch with the recorded `result` is a critical correctness finding (fabricated evidence) — this is the only enforcement on self-reported evidence, so treat a mismatch as severe.
 
 ## Verify
 
-- Phase review report written to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/phase-review.md
-- When phase_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
+- Code review report written to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md
+- When code_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing code-review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
 - Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed. No other combination is valid.
-- When phase_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
-- All critical findings have either a fix task or are resolved
+- When code_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
+- All critical findings have either a reopened task with a new `reviews` entry, a new `fix-N` task, or are resolved
+- On needs_work, `tasks.yaml` is updated and listed in COMPLETION artifacts alongside `code-review.md`
 - phase-signoff will BLOCK if this step's entry is missing from step_history — this step is not optional

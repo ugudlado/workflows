@@ -14,8 +14,10 @@ import yaml
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 # Validator + format contract live with the design skill.
-_VALIDATOR = os.path.join(_REPO_ROOT, "skills", "design", "validate-tasks-yaml.sh")
-_ARTIFACT_FORMATS = os.path.join(_REPO_ROOT, "skills", "design", "reference", "tasks-format.md")
+_VALIDATOR = os.path.join(_REPO_ROOT, "skills", "architect", "validate-tasks-yaml.sh")
+_ARTIFACT_FORMATS = os.path.join(
+    _REPO_ROOT, "skills", "architect", "reference", "tasks-format.md"
+)
 
 
 def _write_tasks_yaml(tmp_path, content: dict) -> str:
@@ -81,7 +83,7 @@ class TestArtifactFormatsTasksYamlSection:
         idx = content.find("# Tasks YAML Format Contract")
         assert idx >= 0
         section = content[idx:]
-        for field in ("id", "title", "files", "verify", "depends_on"):
+        for field in ("id", "title", "files", "verify", "depends_on", "reviews"):
             assert field in section, (
                 f"Tasks YAML Format Contract missing field '{field}'"
             )
@@ -216,7 +218,7 @@ class TestValidatorScript:
         )
 
     def test_valid_file_with_optional_fields(self, tmp_path):
-        """Optional fields (why, change, test_scenarios) should not cause failure."""
+        """Optional fields (why, change, test_scenarios, reviews) should not cause failure."""
         full = {
             "version": 1,
             "tasks": [
@@ -229,6 +231,13 @@ class TestValidatorScript:
                     "verify": ["pytest tests/test_x.py"],
                     "test_scenarios": ["Y observes X emission"],
                     "depends_on": [],
+                    "status": "pending",
+                    "reviews": [
+                        {
+                            "at": "2026-08-03T10:15:00Z",
+                            "comment": "null-guard empty cells before formatRow",
+                        }
+                    ],
                 },
             ],
         }
@@ -236,4 +245,23 @@ class TestValidatorScript:
         result = _run_validator(path)
         assert result.returncode == 0, (
             f"Validator should exit 0 on valid file with optional fields. stderr: {result.stderr}"
+        )
+
+    def test_exits_nonzero_on_reviews_missing_comment(self, tmp_path):
+        bad = {
+            "version": 1,
+            "tasks": [
+                {
+                    "id": "T-1",
+                    "title": "Wire X",
+                    "files": ["a.py"],
+                    "verify": ["echo ok"],
+                    "reviews": [{"at": "2026-08-03T10:15:00Z"}],
+                },
+            ],
+        }
+        path = _write_tasks_yaml(tmp_path, bad)
+        result = _run_validator(path)
+        assert result.returncode != 0, (
+            f"Validator should exit non-zero when reviews[].comment is missing. stdout: {result.stdout}"
         )

@@ -1,6 +1,6 @@
 # Template: tasks.yaml for bugfix schema
 # This file is the structural skeleton for tasks.yaml generation.
-# Field rules and validation rules: design/prompt.md § Tasks YAML Format Contract
+# Field rules and validation rules: architect/SKILL.md § Tasks YAML Format Contract
 # Replace all {placeholders} with bug-specific content.
 # verify commands must be repo-root-relative — no absolute paths, no `cd /abs/path &&`.
 version: 1
@@ -33,6 +33,9 @@ tasks:
       - "full test suite passes — zero new failures"
     why: "fix the root cause, not symptoms"
     change: "Edit {file}:{line} to {mechanism}."
+    # reviews:  # populated by code-review on needs_work (reopen) — do not invent
+    #   - at: "2026-08-03T10:15:00Z"
+    #     comment: "{actionable finding against this task}"
 
   - id: T-3
     title: "Review checkpoint (phase gate)"
@@ -46,3 +49,19 @@ tasks:
       - "full test suite green"
       - "build passes"
     why: "phase gate — confirm fix integrates cleanly"
+
+  # Example review-driven fix task (created by code-review only when no existing
+  # task owns the finding). Prefer reopening T-N with a reviews[] entry instead.
+  # - id: fix-1
+  #   title: "Address review: {short finding}"
+  #   status: pending
+  #   depends_on: [T-3]
+  #   files:
+  #     - src/{file}.py
+  #   verify:
+  #     - pytest tests/test_{slug}.py -v
+  #   why: "code-review finding"
+  #   change: "{mechanism}"
+  #   reviews:
+  #     - at: "2026-08-03T10:15:00Z"
+  #       comment: "{actionable finding}"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # validate-tasks-yaml.sh — validate a tasks.yaml file against the Tasks YAML
-# Format Contract (skills/design/prompt.md § Tasks YAML Format Contract).
+# Format Contract (skills/architect/prompt.md § Tasks YAML Format Contract).
 #
 # Usage: validate-tasks-yaml.sh <path-to-tasks.yaml>
 # Exit 0: file is well-formed.
@@ -96,6 +96,27 @@ for task in tasks:
             errors.append(
                 f"Task '{task.get('id')}' depends_on unknown id '{dep}'"
             )
+
+# Check reviews shape when present
+for task in tasks:
+    if not isinstance(task, dict):
+        continue
+    reviews = task.get("reviews")
+    if reviews is None:
+        continue
+    task_id = task.get("id", "<unknown>")
+    if not isinstance(reviews, list):
+        errors.append(f"Task '{task_id}' reviews must be a list")
+        continue
+    for j, entry in enumerate(reviews):
+        if not isinstance(entry, dict):
+            errors.append(f"Task '{task_id}' reviews[{j}] must be a mapping")
+            continue
+        for field in ("at", "comment"):
+            if field not in entry or not entry[field]:
+                errors.append(
+                    f"Task '{task_id}' reviews[{j}] missing required field '{field}'"
+                )
 
 if errors:
     for e in errors:
