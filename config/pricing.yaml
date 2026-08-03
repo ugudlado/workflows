@@ -62,7 +62,7 @@ models:
     output_usd: 25.0
     cache_read_usd: 0.5
     cache_creation_usd: 6.25
-    effective_from: "2026-07-24T00:00:00"
+    effective_from: "2026-07-01T00:00:00"
 
   - model_id: claude-sonnet-4-5
     input_usd: 3.0
