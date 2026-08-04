@@ -7,5 +7,5 @@ steps:
   - id: design-review
     on_failure: design
   - learn
-  - persist-learnings # validate + append + commit learn's proposed eval scenarios
+  - persist-learnings
   - workflow-report

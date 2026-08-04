@@ -1,7 +1,10 @@
-# workflow-config
+# workflows
 
 Workflow schemas, step contracts, and step-owned agent charters for the
 [orchestrator](https://github.com/ugudlado/orchestrator) engine.
+
+Formerly published as `workflow-config`; the GitHub repo is now
+[`ugudlado/workflows`](https://github.com/ugudlado/workflows).
 
 ## Layout
 
@@ -27,8 +30,8 @@ for tooling that expects a `skills/` tree.
 ```bash
 uv tool install git+https://github.com/ugudlado/orchestrator.git
 cd <your-repo>
-orchestrator config pull https://github.com/ugudlado/workflow-config.git mypack
-# or: orchestrator config pull /path/to/workflow-config mypack --skills
+orchestrator config pull https://github.com/ugudlado/workflows.git workflows
+# or: orchestrator config pull /path/to/workflows workflows --skills
 orchestrator doctor
-orchestrator feature TICKET-1   # or orchestrator mypack/feature TICKET-1 if ambiguous
+orchestrator feature TICKET-1   # or orchestrator workflows/feature TICKET-1 if ambiguous
 ```
