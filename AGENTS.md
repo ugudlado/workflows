@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for agents editing **workflow-config** and for installing it into a
+Guidance for agents editing **workflows** and for installing it into a
 consumer repo via the orchestrator CLI.
 
 ---
@@ -17,7 +17,7 @@ workflow schemas, step contracts, and **step-owned** agent charters (`SKILL.md`
 ## Source layout
 
 ```text
-workflow-config/
+workflows/
   config/
     workflows/*.yaml          # feature, bugfix, complete, …
     steps/<id>/
@@ -43,21 +43,21 @@ source of truth. Top-level `skills/` only mirrors steps.
 uv tool install git+https://github.com/ugudlado/orchestrator.git
 cd <consumer-repo>
 
-orchestrator config pull https://github.com/ugudlado/workflow-config.git mypack
+orchestrator config pull https://github.com/ugudlado/workflows.git workflows
 # local checkout:
-orchestrator config pull /path/to/workflow-config mypack --skills
+orchestrator config pull /path/to/workflows workflows --skills
 
 orchestrator doctor
 orchestrator feature TICKET-1
 # ambiguous across packs:
-orchestrator mypack/feature TICKET-1
+orchestrator workflows/feature TICKET-1
 ```
 
 Consumer layout after pull:
 
 ```text
-.orchestrator/mypack/workflows/feature.yaml
-.orchestrator/mypack/steps/<id>/SKILL.md
+.orchestrator/workflows/workflows/feature.yaml
+.orchestrator/workflows/steps/<id>/SKILL.md
 ```
 
 `--skills` optionally creates `<repo>/skills/<name>` → step dirs for IDE tools.
