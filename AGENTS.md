@@ -22,7 +22,7 @@ workflows/
     workflows/*.yaml          # feature, bugfix, complete, …
     steps/<id>/
       contract.yaml           # prompt: SKILL.md  |  run: script.sh
-      SKILL.md                # agent steps only (canonical charter)
+      SKILL.md → prompt-packs  # charter symlink (see below)
       metrics.md
       scenarios/
       …
@@ -32,8 +32,18 @@ workflows/
   AGENTS.md                   # this file (CLAUDE.md → symlink)
 ```
 
-Charters live **in the step**. Do not reintroduce a separate skills tree as
-source of truth. Top-level `skills/` only mirrors steps.
+Skill charters live in the sibling
+[prompt-packs](https://github.com/ugudlado/prompt-packs) repo — the
+machine-wide skills hub. Each role step's `SKILL.md` is a relative symlink
+(`../../../../prompt-packs/<alias>/SKILL.md`), so both repos must be cloned
+as siblings (e.g. under `~/code/`). Edit charters in prompt-packs and
+commit/push there; step machinery (contract.yaml, scenarios, scripts) stays
+here. Alias map: architect=design, code-reviewer=code-review,
+design-reviewer=design-review, developer=implement, ux-designer=ux-design,
+ux-reviewer=ux-critique; diagnose/explore/learn keep their names.
+Install and update instructions for the skills themselves are in the
+prompt-packs README — not duplicated here. Top-level `skills/` only
+mirrors steps.
 
 ---
 
