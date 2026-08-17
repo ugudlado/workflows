@@ -1,1 +1,1 @@
-../../../../prompt-packs/roles/explorer/SKILL.md
+../../../../skills/roles/explorer/SKILL.md

@@ -10,7 +10,7 @@ consumer repo via the orchestrator CLI.
 Pack source for [orchestrator](https://github.com/ugudlado/orchestrator):
 workflow schemas, step contracts, and **step-owned** agent charters (`SKILL.md`
 + scenarios). Base role prompts (`extends:`) live separately in
-[prompt-packs](https://github.com/ugudlado/prompt-packs).
+[skills](https://github.com/ugudlado/skills).
 
 ---
 
@@ -33,16 +33,16 @@ workflows/
 ```
 
 Skill charters live in the sibling
-[prompt-packs](https://github.com/ugudlado/prompt-packs) repo — the
+[skills](https://github.com/ugudlado/skills) repo — the
 machine-wide skills hub. Each role step's `SKILL.md` is a relative symlink
-(`../../../../prompt-packs/roles/<alias>/SKILL.md`), so both repos must be cloned
-as siblings (e.g. under `~/code/`). Edit charters in prompt-packs and
+(`../../../../skills/roles/<alias>/SKILL.md`), so both repos must be cloned
+as siblings (e.g. under `~/code/`). Edit charters in the skills repo and
 commit/push there; step machinery (contract.yaml, scenarios, scripts) stays
 here. Alias map: designer=design, code-reviewer=code-review,
 design-reviewer=design-review, developer=implement, ux-designer=ux-design,
 ux-reviewer=ux-critique; explore+diagnose share roles/explorer; learn keeps its name.
 Install and update instructions for the skills themselves are in the
-prompt-packs README — not duplicated here. Top-level `skills/` only
+skills-repo README — not duplicated here. Top-level `skills/` only
 mirrors steps.
 
 ---

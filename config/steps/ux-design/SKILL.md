@@ -1,1 +1,1 @@
-../../../../prompt-packs/roles/ux-designer/SKILL.md
+../../../../skills/roles/ux-designer/SKILL.md
