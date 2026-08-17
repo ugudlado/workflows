@@ -1,6 +1,6 @@
 # Template: tasks.yaml for feature schema
 # This file is the structural skeleton for tasks.yaml generation.
-# Field rules and validation rules: architect/SKILL.md § Tasks YAML Format Contract
+# Field rules and validation rules: designer/SKILL.md § Tasks YAML Format Contract
 # Replace all {placeholders} with feature-specific content.
 # verify commands must be repo-root-relative — no absolute paths, no `cd /abs/path &&`.
 version: 1

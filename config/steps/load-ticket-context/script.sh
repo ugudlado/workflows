@@ -76,7 +76,7 @@ err_file="${STATE_DIR}/.load-ticket-context.err"
 if ! json="$(backlog_api_get_task "$ticket_id" 2>"$err_file")"; then
   err="$(cat "$err_file" 2>/dev/null || true)"
   rm -f "$err_file"
-  _fail "[TICKET FETCH FAILED] GET /api/tasks/${ticket_id} failed — do not invent scope from the codebase" "$err"
+  _fail "[TICKET FETCH FAILED] GET project task ${ticket_id} failed — do not invent scope from the codebase" "$err"
 fi
 rm -f "$err_file"
 

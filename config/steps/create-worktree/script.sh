@@ -23,7 +23,7 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
 fi
 
 STATE_YAML="${ORCHESTRATOR_STATE_YAML_PATH:-${STATE_YAML_PATH:?orchestrator: STATE_YAML_PATH required}}"
-WORKTREE_BASE_DIR="${WORKTREE_BASE_DIR:-$HOME/code/feature_worktrees}"
+WORKTREE_BASE_DIR="${WORKTREE_BASE_DIR:-$REPO_ROOT/.worktrees}"
 
 # Read existing worktree_path and schema from state.
 read_state() {

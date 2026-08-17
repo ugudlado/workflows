@@ -38,9 +38,9 @@ machine-wide skills hub. Each role step's `SKILL.md` is a relative symlink
 (`../../../../prompt-packs/roles/<alias>/SKILL.md`), so both repos must be cloned
 as siblings (e.g. under `~/code/`). Edit charters in prompt-packs and
 commit/push there; step machinery (contract.yaml, scenarios, scripts) stays
-here. Alias map: architect=design, code-reviewer=code-review,
+here. Alias map: designer=design, code-reviewer=code-review,
 design-reviewer=design-review, developer=implement, ux-designer=ux-design,
-ux-reviewer=ux-critique; explore+diagnose share roles/explore; learn keeps its name.
+ux-reviewer=ux-critique; explore+diagnose share roles/explorer; learn keeps its name.
 Install and update instructions for the skills themselves are in the
 prompt-packs README — not duplicated here. Top-level `skills/` only
 mirrors steps.

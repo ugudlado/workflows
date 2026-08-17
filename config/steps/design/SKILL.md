@@ -1,1 +1,1 @@
-../../../../prompt-packs/roles/architect/SKILL.md
+../../../../prompt-packs/roles/designer/SKILL.md
