@@ -1,1 +1,1 @@
-../../../../prompt-packs/skills/explore/SKILL.md
+../../../../prompt-packs/explore/SKILL.md

@@ -1,1 +1,1 @@
-../../../../prompt-packs/skills/design-reviewer/SKILL.md
+../../../../prompt-packs/design-reviewer/SKILL.md

@@ -1,1 +1,1 @@
-../../../../prompt-packs/skills/developer/SKILL.md
+../../../../prompt-packs/developer/SKILL.md
