@@ -1,1 +1,1 @@
-../../../../prompt-packs/diagnose/SKILL.md
+../../../../prompt-packs/roles/diagnose/SKILL.md

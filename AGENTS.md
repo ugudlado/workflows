@@ -35,7 +35,7 @@ workflows/
 Skill charters live in the sibling
 [prompt-packs](https://github.com/ugudlado/prompt-packs) repo — the
 machine-wide skills hub. Each role step's `SKILL.md` is a relative symlink
-(`../../../../prompt-packs/<alias>/SKILL.md`), so both repos must be cloned
+(`../../../../prompt-packs/roles/<alias>/SKILL.md`), so both repos must be cloned
 as siblings (e.g. under `~/code/`). Edit charters in prompt-packs and
 commit/push there; step machinery (contract.yaml, scenarios, scripts) stays
 here. Alias map: architect=design, code-reviewer=code-review,

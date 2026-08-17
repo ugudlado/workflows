@@ -1,1 +1,1 @@
-../../../../prompt-packs/ux-reviewer/SKILL.md
+../../../../prompt-packs/roles/ux-reviewer/SKILL.md
