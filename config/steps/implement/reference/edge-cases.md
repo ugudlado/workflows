@@ -66,6 +66,7 @@ COMPLETION:
     tasks_skipped: <N remaining>
     known_concerns: ["<blocker description>"]
 ```
+
 Only tasks whose commits landed in `git log` may have `status: completed` in
 `tasks.yaml`. Do not emit an `implementation_result` handle.
 

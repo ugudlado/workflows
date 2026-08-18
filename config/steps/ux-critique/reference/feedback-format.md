@@ -10,8 +10,8 @@ Prefer structured fields on `ux-artifacts.yaml` (the UX design artifact):
 
 ```yaml
 review:
-  verdict: pass          # pass | needs_work | skipped
-  overall: 8             # null when skipped
+  verdict: pass # pass | needs_work | skipped
+  overall: 8 # null when skipped
   reviewed: "2026-08-03"
   scores:
     accessibility: 9
@@ -33,12 +33,12 @@ When authoring narrative notes, mirror
 
 ## Dimensions
 
-| Dimension | Focus |
-| --- | --- |
-| accessibility | names, contrast, keyboard traps |
-| hierarchy | primary job first, progressive disclosure |
-| consistency | design-system reuse |
-| friction | frequency × pain; destructive-action guards |
+| Dimension     | Focus                                       |
+| ------------- | ------------------------------------------- |
+| accessibility | names, contrast, keyboard traps             |
+| hierarchy     | primary job first, progressive disclosure   |
+| consistency   | design-system reuse                         |
+| friction      | frequency × pain; destructive-action guards |
 
 ## Routing
 

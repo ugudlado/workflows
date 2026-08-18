@@ -9,32 +9,32 @@ The authoritative template is `architect/templates/$SCHEMA/tasks.yaml`
 
 ## Field rules
 
-| Field          | Required | Format                                                                        |
-| -------------- | -------- | ----------------------------------------------------------------------------- |
-| version        | Yes      | Integer `1`                                                                   |
-| tasks          | Yes      | List of task objects                                                          |
-| id             | Yes      | `T-<N>` or `fix-<N>`, unique within the file                                  |
-| title          | Yes      | One line, imperative verb                                                     |
-| depends_on     | No       | List of other task ids; empty list or absent means no deps                    |
-| files          | Yes      | List of file paths the task is allowed to touch                               |
-| verify         | Yes      | List of repo-root-relative commands (no absolute paths, no `cd /abs/path &&`) |
-| test_scenarios | No       | List of human-readable test cases                                             |
-| why            | No       | Which design.md AC this task serves                                           |
-| change         | No       | The mechanism — what edit, at which file:line                                 |
+| Field          | Required | Format                                                                                                                                         |
+| -------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| version        | Yes      | Integer `1`                                                                                                                                    |
+| tasks          | Yes      | List of task objects                                                                                                                           |
+| id             | Yes      | `T-<N>` or `fix-<N>`, unique within the file                                                                                                   |
+| title          | Yes      | One line, imperative verb                                                                                                                      |
+| depends_on     | No       | List of other task ids; empty list or absent means no deps                                                                                     |
+| files          | Yes      | List of file paths the task is allowed to touch                                                                                                |
+| verify         | Yes      | List of repo-root-relative commands (no absolute paths, no `cd /abs/path &&`)                                                                  |
+| test_scenarios | No       | List of human-readable test cases                                                                                                              |
+| why            | No       | Which design.md AC this task serves                                                                                                            |
+| change         | No       | The mechanism — what edit, at which file:line                                                                                                  |
 | status         | No       | `pending` (default) or `completed`. `implement` sets `completed` after commit; `code-review` may reopen to `pending` when addressing a finding |
-| reviews        | No       | List of reviewer comments (see below). Appended when a task is reopened or when a new `fix-N` is created from a finding |
-| tokens_in      | No       | Input tokens used for this task; written by `implement` on completion         |
-| tokens_out     | No       | Output tokens used for this task; written by `implement` on completion        |
-| duration_s     | No       | Wall-clock seconds for this task; written by `implement` on completion        |
+| reviews        | No       | List of reviewer comments (see below). Appended when a task is reopened or when a new `fix-N` is created from a finding                        |
+| tokens_in      | No       | Input tokens used for this task; written by `implement` on completion                                                                          |
+| tokens_out     | No       | Output tokens used for this task; written by `implement` on completion                                                                         |
+| duration_s     | No       | Wall-clock seconds for this task; written by `implement` on completion                                                                         |
 
 ### `reviews[]` entries (optional)
 
 Minimal shape — one object per reviewer comment:
 
-| Field   | Required | Format                                              |
-| ------- | -------- | --------------------------------------------------- |
+| Field   | Required | Format                                               |
+| ------- | -------- | ---------------------------------------------------- |
 | at      | Yes      | ISO-8601 UTC timestamp (e.g. `2026-08-03T10:15:00Z`) |
-| comment | Yes      | Actionable reviewer note (what to fix and why)      |
+| comment | Yes      | Actionable reviewer note (what to fix and why)       |
 
 Example:
 

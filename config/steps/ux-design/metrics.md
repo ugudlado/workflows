@@ -5,10 +5,10 @@ Metric keys: `ux_gating`, `artifact_persistence`
 Use these metrics only for step-specific scenarios. Base ux-designer metrics are
 scored separately on base scenarios.
 
-| Metric                 | 10 looks like                                                                                                        | 0 looks like                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Metric                 | 10 looks like                                                                                                                                  | 0 looks like                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `ux_gating`            | Returns completed+skipped+reason when no UI surface; surfaces skill failure instead of swallowing it; bounded critique loop; sensible default on no pick. | Prototyping UI-less features, blocking a valid no-UI skip, silent failure swallowing, unbounded critique loops. |
-| `artifact_persistence` | ux-prototype.html and complete ux-artifacts.yaml persisted; UI Direction recorded back in discovery brief.           | Missing artifacts, incomplete artifact fields, or direction never written back.    |
+| `artifact_persistence` | ux-prototype.html and complete ux-artifacts.yaml persisted; UI Direction recorded back in discovery brief.                                     | Missing artifacts, incomplete artifact fields, or direction never written back.    |
 
 ## Eval context
 

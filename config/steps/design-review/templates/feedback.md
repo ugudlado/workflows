@@ -6,9 +6,9 @@
 
 ### Scores
 
-| Dimension | Score | Notes |
-| --- | --- | --- |
-| {dimension} | {N} | {brief note or "—"} |
+| Dimension   | Score | Notes               |
+| ----------- | ----- | ------------------- |
+| {dimension} | {N}   | {brief note or "—"} |
 
 ### Findings
 

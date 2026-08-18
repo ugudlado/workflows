@@ -9,7 +9,15 @@ tools:
   cursor:
     binary: cursor-agent
     args_template:
-      ["-p", "--output-format", "json", "--model", "{model_id}", "--force", "{prompt}"]
+      [
+        "-p",
+        "--output-format",
+        "json",
+        "--model",
+        "{model_id}",
+        "--force",
+        "{prompt}",
+      ]
   codex:
     binary: codex
     args_template: ["exec", "--json", "--prompt", "{prompt}"]

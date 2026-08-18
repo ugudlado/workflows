@@ -101,25 +101,25 @@ not invent scores or verdicts there.
 
 ## Field rules
 
-| Field                 | Required   | Format                                                                         |
-| --------------------- | ---------- | ------------------------------------------------------------------------------ |
-| Frontmatter           | Yes        | YAML block with `feature-id` and `linear-ticket`                               |
-| Context               | Yes        | Prose describing problem space                                                 |
-| Goals                 | Yes        | Bulleted list, at least one                                                    |
-| Non-Goals             | Yes        | Bulleted list, at least one                                                    |
-| Approaches Considered | Yes        | At least 2 approaches with pros/cons                                           |
-| Selected Approach     | Yes        | Name, complexity (XS–XL), and constraints that ruled out alternatives          |
-| Architecture Overview | Yes        | System-level component interaction                                             |
-| Key Abstractions      | Yes        | Core interfaces or patterns introduced                                         |
-| Components            | Contextual | Required when >2 components involved                                           |
-| Data Flow             | Contextual | Required when data passes through >1 component                                 |
-| State Management      | Contextual | Required when mutable state exists                                             |
-| Error Handling        | Contextual | Required when external dependencies or user input involved                     |
-| Constraints           | Yes        | "None beyond standard project conventions" if genuinely none                   |
-| Trade-offs            | Yes        | At least one trade-off articulated                                             |
-| Acceptance Criteria   | Yes        | Bulleted list, each with `[traces: UC-N]` referencing discovery.md use case(s) |
-| Decisions             | Contextual | Populated when non-obvious choices made                                        |
-| Open Questions        | Yes        | Empty section means no blockers                                                |
+| Field                 | Required   | Format                                                                            |
+| --------------------- | ---------- | --------------------------------------------------------------------------------- |
+| Frontmatter           | Yes        | YAML block with `feature-id` and `linear-ticket`                                  |
+| Context               | Yes        | Prose describing problem space                                                    |
+| Goals                 | Yes        | Bulleted list, at least one                                                       |
+| Non-Goals             | Yes        | Bulleted list, at least one                                                       |
+| Approaches Considered | Yes        | At least 2 approaches with pros/cons                                              |
+| Selected Approach     | Yes        | Name, complexity (XS–XL), and constraints that ruled out alternatives             |
+| Architecture Overview | Yes        | System-level component interaction                                                |
+| Key Abstractions      | Yes        | Core interfaces or patterns introduced                                            |
+| Components            | Contextual | Required when >2 components involved                                              |
+| Data Flow             | Contextual | Required when data passes through >1 component                                    |
+| State Management      | Contextual | Required when mutable state exists                                                |
+| Error Handling        | Contextual | Required when external dependencies or user input involved                        |
+| Constraints           | Yes        | "None beyond standard project conventions" if genuinely none                      |
+| Trade-offs            | Yes        | At least one trade-off articulated                                                |
+| Acceptance Criteria   | Yes        | Bulleted list, each with `[traces: UC-N]` referencing discovery.md use case(s)    |
+| Decisions             | Contextual | Populated when non-obvious choices made                                           |
+| Open Questions        | Yes        | Empty section means no blockers                                                   |
 | Review                | Reviewer   | Written only by design-review; see `design-reviewer/reference/feedback-format.md` |
 
 ## Traceability rules

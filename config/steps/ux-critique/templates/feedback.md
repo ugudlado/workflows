@@ -6,12 +6,12 @@
 
 ### Scores
 
-| Dimension | Score | Notes |
-| --- | --- | --- |
-| accessibility | {N} | {brief note or "—"} |
-| hierarchy | {N} | {brief note or "—"} |
-| consistency | {N} | {brief note or "—"} |
-| friction | {N} | {brief note or "—"} |
+| Dimension     | Score | Notes               |
+| ------------- | ----- | ------------------- |
+| accessibility | {N}   | {brief note or "—"} |
+| hierarchy     | {N}   | {brief note or "—"} |
+| consistency   | {N}   | {brief note or "—"} |
+| friction      | {N}   | {brief note or "—"} |
 
 ### Findings
 
