@@ -1,3 +1,6 @@
 id: ticket-done
 version: 1
 run: script.sh
+params:
+  TICKET_SYNC_STATUS: "Done"
+  TICKET_SYNC_LOG_PREFIX: ticket-done

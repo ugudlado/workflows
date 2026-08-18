@@ -1,3 +1,6 @@
 id: ticket-qa
 version: 1
 run: ../../lib/ticket/ticket-sync.sh
+params:
+  TICKET_SYNC_STATUS: "Verify"
+  TICKET_SYNC_LOG_PREFIX: ticket-qa

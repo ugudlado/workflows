@@ -4,11 +4,9 @@
 # When ticketing=backlog, REST failure aborts the workflow (exit 1).
 set -euo pipefail
 
-: "${REPO_ROOT:?orchestrator: REPO_ROOT required}"
-: "${TICKET_SYNC_STATUS:?orchestrator: TICKET_SYNC_STATUS required}"
-: "${TICKET_SYNC_LOG_PREFIX:?orchestrator: TICKET_SYNC_LOG_PREFIX required}"
-
-STATE_YAML="${ORCHESTRATOR_STATE_YAML_PATH:-${STATE_YAML_PATH:?orchestrator: state yaml path required}}"
+# Ticketing-unconfigured is a no-op regardless of env — must be checked before
+# any hard `:?` requirement below, so an unconfigured consumer never aborts.
+STATE_YAML="${ORCHESTRATOR_STATE_YAML_PATH:-${STATE_YAML_PATH:-}}"
 LIB="$(cd "$(dirname "$0")" && pwd)/backlog-api.sh"
 # shellcheck source=backlog-api.sh
 source "$LIB"
@@ -18,16 +16,22 @@ _read_state_field() {
   grep -E "^${key}:" "$STATE_YAML" 2>/dev/null | head -1 | sed -E 's/^[^:]+:[[:space:]]*//' | tr -d '"'"'" || true
 }
 
-ticket_id="$(_read_state_field ticket_id)"
+ticket_id=""
+[ -n "$STATE_YAML" ] && ticket_id="$(_read_state_field ticket_id)"
 ticketing="$(backlog_api_ticketing)"
 if [ -n "$ticket_id" ]; then
   ticket_id="$(printf '%s' "$ticket_id" | tr '[:lower:]' '[:upper:]')"
 fi
 
 if [ -z "$ticket_id" ] || [ "$ticketing" != "backlog" ]; then
-  printf '%s\n' "{\"status\": \"completed\", \"outputs\": {\"ticket_status_set\": \"${TICKET_SYNC_STATUS}\"}}"
+  printf '%s\n' "{\"status\": \"completed\", \"outputs\": {\"ticket_status_set\": \"${TICKET_SYNC_STATUS:-}\"}}"
   exit 0
 fi
+
+: "${REPO_ROOT:?orchestrator: REPO_ROOT required}"
+: "${TICKET_SYNC_STATUS:?orchestrator: TICKET_SYNC_STATUS required}"
+: "${TICKET_SYNC_LOG_PREFIX:?orchestrator: TICKET_SYNC_LOG_PREFIX required}"
+: "${STATE_YAML:?orchestrator: state yaml path required}"
 
 if ! backlog_api_base >/dev/null; then
   echo "ERROR ${TICKET_SYNC_LOG_PREFIX}: BACKLOG_URL/BACKLOG_TOKEN/BACKLOG_PROJECT_ID missing for ${ticket_id}" >&2

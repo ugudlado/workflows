@@ -278,6 +278,55 @@ def test_ticket_sync_comment_carries_correlation_key(tmp_path):
     assert "correlation: ticket=ORC-125 change=orc-125 step=implement" in bodies[0]["body"]
     assert "status set to In Progress" in bodies[0]["body"]
 
+def test_ticket_sync_noop_when_ticketing_unconfigured(tmp_path):
+    """BACKLOG_URL unset → ticket-sync.sh no-ops (exit 0) even with no
+    TICKET_SYNC_STATUS/TICKET_SYNC_LOG_PREFIX supplied — the no-op branch
+    must run before the hard `:?` requirements."""
+    state_dir = tmp_path / "st"
+    state_dir.mkdir()
+    state_yaml = state_dir / "state.yaml"
+    state_yaml.write_text(yaml.safe_dump({"ticket_id": "orc-125", "change_id": "orc-125"}))
+
+    env = os.environ.copy()
+    for k in ("BACKLOG_URL", "BACKLOG_TOKEN", "BACKLOG_PROJECT", "BACKLOG_PROJECT_ID",
+              "TICKET_SYNC_STATUS", "TICKET_SYNC_LOG_PREFIX", "REPO_ROOT"):
+        env.pop(k, None)
+    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
+
+    proc = subprocess.run(
+        ["bash", str(_SYNC_SH)],
+        capture_output=True, text=True, cwd=str(tmp_path), env=env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert out["status"] == "completed"
+
+
+def test_ticket_sync_noop_with_status_but_no_backlog_url(tmp_path):
+    """BACKLOG_URL unset but TICKET_SYNC_STATUS supplied → still a clean no-op."""
+    state_dir = tmp_path / "st"
+    state_dir.mkdir()
+    state_yaml = state_dir / "state.yaml"
+    state_yaml.write_text(yaml.safe_dump({"ticket_id": "orc-125", "change_id": "orc-125"}))
+
+    env = os.environ.copy()
+    for k in ("BACKLOG_URL", "BACKLOG_TOKEN", "BACKLOG_PROJECT", "BACKLOG_PROJECT_ID"):
+        env.pop(k, None)
+    env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
+    env["TICKET_SYNC_STATUS"] = "In Progress"
+    env["TICKET_SYNC_LOG_PREFIX"] = "ticket-start"
+
+    proc = subprocess.run(
+        ["bash", str(_SYNC_SH)],
+        capture_output=True, text=True, cwd=str(tmp_path), env=env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert out["status"] == "completed"
+    assert out["outputs"]["ticket_status_set"] == "In Progress"
+
+
 def test_ticket_sync_survives_comment_post_failure(tmp_path):
     """A failed comment POST warns but must not fail the status transition."""
     proc, _ = _run_ticket_sync(

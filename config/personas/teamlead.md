@@ -127,25 +127,33 @@ Branch on the result:
 - **Exit 3** — error. Read the `hint` in the output, fix the payload/state,
   retry. If it recurs 3 times, post the error and stop (STOP condition).
 
-## Ticket-status script steps need env you must supply
+## Ticket-status script steps self-supply their status
 
-`ticket-start`, `ticket-review`, `ticket-qa`, `ticket-rework` require
-`TICKET_SYNC_STATUS` and `TICKET_SYNC_LOG_PREFIX` as env vars on the
-SAME `next` call that executes them — no contract sets these
-automatically, this is by design (caller-supplied). Env does not persist
-across your separate shell calls, so prefix it every time. You can tell
-which script step is about to run from `next_step.step_id` in `$STATE`
-before calling `next`. Mapping (verified against this project's real
-Backlog lanes — do not guess other names):
+`ticket-start`, `ticket-review`, `ticket-qa`, `ticket-rework`, `ticket-done`
+each set their own `TICKET_SYNC_STATUS` / `TICKET_SYNC_LOG_PREFIX` via
+`params:` in the step's own `contract.yaml` — you do not need to (and
+normally should not) pass these env vars yourself. Mapping (verified
+against this project's real Backlog lanes — do not guess other names):
 
-```bash
-TICKET_SYNC_STATUS="In Progress" TICKET_SYNC_LOG_PREFIX=ticket-start orchestrator next "$STATE"
-TICKET_SYNC_STATUS="Review"      TICKET_SYNC_LOG_PREFIX=ticket-review orchestrator next "$STATE"
-TICKET_SYNC_STATUS="Verify"      TICKET_SYNC_LOG_PREFIX=ticket-qa     orchestrator next "$STATE"
+```text
+ticket-start  -> In Progress
+ticket-review -> Review
+ticket-qa     -> Verify
+ticket-rework -> In Progress
+ticket-done   -> Done
 ```
 
-For every other `next` call (script or agent steps that aren't one of
-these four), no prefix is needed.
+An env var you DO supply on the `next` call still wins (the contract's
+`params:` only fills in a default) — use this only if you need to
+override a status for a one-off run; normally just call `next` plainly:
+
+```bash
+orchestrator next "$STATE"
+```
+
+Ticketing-unconfigured environments (no `BACKLOG_URL`) always no-op on
+these steps regardless of env, so nothing needs to be supplied to make an
+unconfigured consumer safe.
 
 ## On a step persona's reply (they will @mention you back)
 
