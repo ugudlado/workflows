@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Sync persona prompts (config/personas/*.md) into Buzz Desktop's managed-agents.json.
+
+Updates system_prompt IN PLACE by agent name — never re-imports, so agent
+keys, pubkeys, and channel memberships are untouched. Buzz Desktop must be
+fully quit (it owns the store and rewrites it on launch).
+
+Usage:
+  bin/sync-persona-prompts                       # default store: xyz.block.buzz.app.dev
+  bin/sync-persona-prompts xyz.block.buzz.app    # another bundle identifier
+"""
+
+import json
+import pathlib
+import subprocess
+import sys
+
+PERSONAS_DIR = pathlib.Path(__file__).resolve().parent.parent / "config" / "personas"
+# agent display name -> prompt file
+PERSONAS = {
+    "TeamLead": "teamlead.md",
+    "Explorer": "explorer.md",
+    "Designer": "designer.md",
+    "UxDesigner": "uxdesigner.md",
+    "Reviewer": "reviewer.md",
+    "Implementer": "implementer.md",
+}
+
+identifier = sys.argv[1] if len(sys.argv) > 1 else "xyz.block.buzz.app.dev"
+store = pathlib.Path.home() / "Library" / "Application Support" / identifier / "agents" / "managed-agents.json"
+
+if not store.exists():
+    sys.exit(f"no store at {store}")
+if subprocess.run(["pgrep", "-f", "buzz-desktop"], capture_output=True).returncode == 0:
+    sys.exit("Buzz Desktop is running — quit it first (it rewrites managed-agents.json on launch).")
+
+records = json.loads(store.read_text())
+prompts = {name: (PERSONAS_DIR / f).read_text() for name, f in PERSONAS.items()}
+
+updated = {}
+for r in records:
+    prompt = prompts.get(r.get("name"))
+    if prompt is not None and r.get("system_prompt") != prompt:
+        r["system_prompt"] = prompt
+        updated[r["name"]] = updated.get(r["name"], 0) + 1
+
+if not updated:
+    print("all persona prompts already in sync")
+    sys.exit(0)
+
+backup = store.with_suffix(".json.bak")
+backup.write_text(store.read_text())
+store.write_text(json.dumps(records, indent=2))
+for name, n in sorted(updated.items()):
+    dup = f" ({n} records — store has duplicates)" if n > 1 else ""
+    print(f"updated {name}{dup}")
+print(f"backup: {backup}")
