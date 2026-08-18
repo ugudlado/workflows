@@ -1,7 +1,7 @@
 # feature-remote — feature workflow for remote (buzz) agent execution.
 #
 # Transport trust (reply signatures, roster identity) is NOT a workflow
-# concern — lib/buzz/await_reply.py rejects unauthentic replies before the
+# concern — the workflow-step skill's transport tooling rejects unauthentic replies before the
 # loop ever sees them. The workflow verifies the WORK: verify-changes checks
 # the run branch against the requirement (acceptance criteria, tasks, project
 # checks) after implement, and routes back to implement when unmet.
