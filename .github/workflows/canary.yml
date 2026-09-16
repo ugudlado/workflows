@@ -1,0 +1,48 @@
+name: Canary
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC nightly
+  workflow_dispatch: {}
+
+env:
+  ORCHESTRATOR_REF: simplify-v2
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML (canary scripts shell out to python3 + yaml)
+        run: pip install pyyaml
+
+      - name: Configure git identity for fixture repos
+        run: |
+          git config --global user.email "canary@example.com"
+          git config --global user.name "canary"
+
+      - name: Checkout engine (workflow-report imports orchestrator_next)
+        run: |
+          git clone --branch "$ORCHESTRATOR_REF" --depth 1 \
+            https://github.com/ugudlado/orchestrator.git /tmp/orchestrator-engine
+
+      - name: Run canary harness
+        env:
+          ORCHESTRATOR_ENGINE_SRC: /tmp/orchestrator-engine
+        run: bash canary/run.sh | tee canary-output.txt
+
+      - name: Upload canary summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-summary-${{ github.run_id }}
+          path: |
+            canary-output.txt
+            canary/skip.txt
+          if-no-files-found: warn
