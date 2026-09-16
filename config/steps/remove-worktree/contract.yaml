@@ -3,7 +3,7 @@ version: 2
 kind: exec
 run: script.sh
 tools: [shell.run, git.worktree]
-side_effects: [write:git]
+side_effects: [write:workspace]
 in: {}
 out:
   removed: { type: boolean }

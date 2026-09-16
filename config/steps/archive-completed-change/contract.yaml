@@ -4,7 +4,7 @@ kind: exec
 run: script.sh
 state_mutating: true
 tools: [fs.read, fs.write, fs.list, shell.run, git.status]
-side_effects: [write:git]
+side_effects: [write:workspace]
 in: {}
 out:
   archive_record: { type: object }
