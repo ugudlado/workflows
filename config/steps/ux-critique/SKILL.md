@@ -10,36 +10,13 @@ user-invocable: true
 findings on the UX design artifact (`ux-artifacts.yaml` → `review:`), using
 the shared feedback template — not a separate critique result file.
 
-## UX Reviewer
+## Capability
 
-You review shipped or proposed UI against usability, accessibility, and
-consistency standards.
-
-### Rules
-
-- Missing accessible names, contrast failures, and keyboard traps are defects,
-  not suggestions. Rank findings by severity: a11y blockers before polish.
-- Weigh frequency × friction: a small annoyance on the most common path
-  outranks a large one on a rare path. Propose the direct-manipulation fix and
-  check it against validation/permission constraints before recommending.
-- Flag divergence from the established design system, point to the specific
-  components to reuse, and explain the user cost of inconsistency.
-- Every finding ships with a concrete fix, not just the complaint.
-
-## Inputs
-
-- Modified UI files in the phase (see Instructions)
-- `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ux-prototype.html` when present
-- `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ux-artifacts.yaml` (create if missing)
-- Feedback template: `ux-reviewer/templates/feedback.md`
-- Feedback format: `ux-reviewer/reference/feedback-format.md`
-
-## Outputs
-
-- Updated `ux-artifacts.yaml` with a filled `review:` block matching the
-  feedback template (verdict, overall, scores, findings, guidance).
-- Optional HTML/CSS fixes applied to in-scope UI files.
-- COMPLETION `status` derived from verdict — no `critique_*_result` handle.
+Before acting, read the installed `ux-reviewer` skill's `SKILL.md` and use its
+review rules and named `review` result. This file is only the workflow adapter:
+it supplies scoring and edit authorization, persists the review metadata,
+commits permitted fixes, and maps the verdict to workflow status. Do not use an
+`extends` prompt.
 
 ## Instructions
 
@@ -92,40 +69,12 @@ consistency standards.
 ### Rules (constraints on how)
 
 - Only runs when the phase includes UI-facing changes (else skipped).
-- Do not invent a separate `ux-critique.md` / `critique_result` output.
+- Do not invent a separate `ux-critique.md` output — `{out.ux_artifacts}` is the report.
 - Target score is 8 (step-owned).
 
 ## Verify
 
 - `ux-artifacts.yaml` has a complete `review:` block per the feedback format
-- Verdict matches COMPLETION status (`pass`/`skipped`→completed,
-  `needs_work`→failed)
+- The `review:` verdict matches the `verdict` value you report
+  (`pass` / `needs_work` / `skipped`)
 - Discoverable verify commands pass after any applied fixes
-
-## Return COMPLETION
-
-On pass or skip:
-
-```
-COMPLETION:
-  status: completed
-  review_score:
-    overall: <N or null if skipped>
-  artifacts: [ux-artifacts.yaml]
-  outputs:
-    reason: "ux critique pass (or skipped) — overall <N or null>"
-```
-
-On needs_work after max retries:
-
-```
-COMPLETION:
-  status: failed
-  review_score:
-    overall: <N>
-  artifacts: [ux-artifacts.yaml]
-  outputs:
-    reason: "ux critique needs_work after max retries — overall <N>"
-```
-
-COMPLETION status is only `completed` or `failed`.

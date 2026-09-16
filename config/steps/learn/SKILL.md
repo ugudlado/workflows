@@ -8,24 +8,21 @@ user-invocable: true
 
 **Intent:** Trigger automatic learning from the just-completed change so every completion improves the next execution.
 
-## Inputs
+## Capability
 
-- `final_signoff_decision` (optional) — names a human approval gate, not a dataflow edge.
-
-## Outputs
-
-- Optional: `proposed-scenarios.jsonl` next to this run's `state.yaml` (created
-  when durable learnings need new eval scenarios).
-- Optional COMPLETION `outputs.backlog_tickets_synced` (list, when tickets were filed).
-  No `learn_result` handle — step `status` plus any written files are enough.
+Before acting, read the installed `learner` skill's `SKILL.md` and use its
+learning rules and named `learning` result. This file is only the workflow
+adapter: it gathers run history, resolves target step prompts, persists scenario
+proposals, and emits the completion protocol. Do not use an `extends` prompt.
 
 ## Instructions
 
 Run the workflow learning pipeline for this completed change.
 
 1. Read the active state.yaml for this change. Prefer `state_yaml_path` from the
-   dispatch prompt (worktree runs: under `worktree_path/spec/changes/<change_id>/`;
-   non-worktree: `$REPO_ROOT/spec/changes/<change_id>/`). Do not read from archive
+   dispatch prompt (worktree runs: under the run's artifacts dir inside
+   `worktree_path`; non-worktree: the run's artifacts dir under `$REPO_ROOT`).
+   Do not read from archive
    or from `$REPO_ROOT/spec/changes/` while a worktree path is set — merge and
    (mark-change-completed, compute-swe-metrics, cost-report, ticket-done) run before
    archive; merge and worktree teardown stay in `orchestrator complete`.
@@ -60,19 +57,10 @@ Run the workflow learning pipeline for this completed change.
 4. If learning fails for any reason: log learn_skipped: true and return success.
    Learning is best-effort and must not fail the complete phase.
 
-5. Return COMPLETION:
-   ```
-   COMPLETION:
-     status: completed
-     outputs:
-       reason: "learn cycle finished (or gated off — see logs)"
-       backlog_tickets_synced: []
-   ```
-   If learning was gated off / not listed by the workflow, still return
-   `status: completed` (learning is best-effort). Put the skip detail in
-   `outputs.reason` and chat/logs (`learn_skipped: true`, `learn_error: ...`) —
-   do not invent a `learn_result` output. COMPLETION status is only
-   `completed` or `failed`.
+5. If learning was gated off / not listed by the workflow, still finish
+   successfully — learning is best-effort. Put the skip detail in the logs
+   (`learn_skipped: true`, `learn_error: ...`). Writing
+   `{out.proposed_scenarios}` is optional.
 
 ### Rules (constraints on how)
 

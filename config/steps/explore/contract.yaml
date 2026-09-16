@@ -1,6 +1,7 @@
 id: explore
 version: 6
 kind: judgment
+prompt: SKILL.md
 max_turns: 30
 tools: [fs.read, fs.list, shell.run]
 side_effects: []

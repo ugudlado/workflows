@@ -1,6 +1,7 @@
 id: design-review
 version: 2
 kind: judgment
+prompt: SKILL.md
 max_turns: 25
 tools: [fs.read, fs.write, shell.run]
 side_effects: []

@@ -8,50 +8,19 @@ user-invocable: true
 
 **Intent:** Design and validate UI/UX through playground prototyping and critique.
 
-## UX Designer
+## Capability
 
-You design interactions and information hierarchy for real users under real
-constraints.
-
-### Rules
-
-- Design for the user's primary job first; use progressive disclosure (filters,
-  defaults, density controls) instead of showing everything at once.
-- Every view gets its empty, loading, and error states: empty teaches the next
-  action, error is honest and recoverable, loading avoids layout shift.
-- Guard destructive actions with friction proportional to severity, separate
-  them visually from routine actions, consider recoverability (undo/soft
-  delete), and state consequences to dependent data in the UI copy.
-- Keep core information reachable without hover-only or modal-heavy
-  interaction.
-
-## Inputs
-
-- `discovery.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`
-  (`spec/changes/<slug>/discovery.md`).
-- Ticket body at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
-  (`spec/changes/<slug>/ticket-context.md`) when present — for product/UX scope.
-
-## Outputs
-
-- Artifacts: `ux-prototype.html` and `ux-artifacts.yaml` (in
-  `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/`). Direction summary lives in
-  `ux-artifacts.yaml` (`prototype.description` / `selected_option`) and
-  discovery.md's UI Direction section — no COMPLETION `ux_direction` handle.
+Before acting, read the installed `ux-designer` skill's `SKILL.md` and use its
+UX rules and named `ux_design` result. This file is only the workflow adapter:
+it supplies product context, persists the prototype and metadata, updates the
+discovery artifact, and emits the completion protocol. Do not use an `extends`
+prompt.
 
 ## Instructions
 
 1. Read the discovery brief's "UI Direction" section for context.
    **If the UI Direction is "N/A" or explicitly states no UI components,
    stop this step — do NOT generate prototypes or artifacts:**
-   ```
-   COMPLETION:
-     step_id: ux-design
-     status: completed
-     outputs:
-       skipped: true
-       reason: "No UI surface — discovery brief UI Direction is N/A"
-   ```
 2. Generate 3 design options via the playground skill (when available).
    - If playground fails: escalate to user with error. Do not proceed silently.
 3. Present options to user for selection.
@@ -65,8 +34,8 @@ constraints.
 6. Record final UI direction in the discovery brief's "UI Direction" section.
 7. Persist UX artifacts:
    a. Save the final polished prototype HTML to
-   $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ux-prototype.html
-   b. Write $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ux-artifacts.yaml with:
+   {out.ux_prototype}
+   b. Write {out.ux_artifacts} with:
    - prototype.file: ux-prototype.html
    - prototype.description: one-line summary of the design direction
    - prototype.options_considered: number of options generated (typically 3)
@@ -77,16 +46,9 @@ constraints.
      (`verdict` / `overall` / `scores` / `findings` / `guidance` — see
      `ux-reviewer/reference/feedback-format.md`). Leave `verdict` unset or
      `pending` until critique runs.
-8. Return COMPLETION (driver calls orchestrator done):
-   ```
-   COMPLETION:
-     status: completed
-     artifacts: [ux-prototype.html, ux-artifacts.yaml]
-     outputs:
-       reason: "UX prototype and artifacts ready; UI Direction written back to discovery"
-   ```
-   Do not emit `ux_direction` — it is already in the artifacts and discovery.md.
-   COMPLETION status is only `completed` or `failed`.
+8. Report `skipped` (true when there was no UI surface, false otherwise).
+   Do not report a `ux_direction` value — it is already in `{out.ux_artifacts}`
+   and discovery.md.
 
 ### Rules (constraints on how)
 
@@ -94,9 +56,9 @@ constraints.
 
 ## Verify
 
-Before returning COMPLETION, confirm:
+Before finishing, confirm:
 
 - UI Direction section updated in discovery brief
 - At least 3 options were generated and one selected
-- ux-prototype.html exists in $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/
-- ux-artifacts.yaml exists and follows § UX Artifact Contract format
+- `{out.ux_prototype}` exists
+- `{out.ux_artifacts}` exists and follows § UX Artifact Contract format

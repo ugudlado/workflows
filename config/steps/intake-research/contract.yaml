@@ -1,6 +1,7 @@
 id: intake-research
 version: 3
 kind: judgment
+prompt: SKILL.md
 max_turns: 20
 tools: [fs.read, fs.write, fs.list]
 side_effects: []

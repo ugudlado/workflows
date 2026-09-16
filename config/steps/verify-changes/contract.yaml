@@ -1,6 +1,7 @@
 id: verify-changes
 version: 2
 kind: judgment
+prompt: SKILL.md
 max_turns: 40
 tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch]
 side_effects: []

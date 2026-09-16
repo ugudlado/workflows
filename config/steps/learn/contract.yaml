@@ -1,6 +1,7 @@
 id: learn
 version: 4
 kind: judgment
+prompt: SKILL.md
 max_turns: 40
 tools: [fs.read, fs.write, fs.list, shell.run]
 side_effects: []

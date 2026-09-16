@@ -1,6 +1,7 @@
 id: diagnose
 version: 5
 kind: judgment
+prompt: SKILL.md
 max_turns: 30
 tools: [fs.read, fs.write, fs.list, shell.run]
 side_effects: []

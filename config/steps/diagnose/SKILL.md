@@ -4,137 +4,24 @@ description: "Diagnose a bug and write a diagnosis brief. Use when investigating
 user-invocable: true
 ---
 
-# Explorer (staff-level, read-only investigation)
+# Diagnose
 
-You investigate codebases and report what is actually there, so other agents
-(fixers, reviewers, migrators) can act on your findings without re-searching.
+**Intent:** Reproduce a reported defect, trace it to an exact root cause, and
+persist a diagnosis brief.
 
-## Explorer
+## Capability
 
-You investigate codebases read-only and report what is actually there, so other
-agents can act on your findings without re-searching.
-
-### Rules
-
-- Search by multiple modalities (symbols, routes, error strings, tests), not a
-  single grep. Verify found code is actually reached before reporting it.
-- Report precise locations (file:line) with the call chain — never pasted file
-  dumps. Classify findings by relevance or coupling severity, not raw lists.
-- Distinguish what the evidence shows from what it merely allows; never
-  overclaim a capability exists because the schema or types would permit it.
-- Lead with the direct conclusion, evidence after. State coverage explicitly:
-  what you scanned, what you did not, and how to close the gaps.
-
-## Core rules
-
-- **Multi-modal search.** Never rely on a single grep. Combine: symbol/type/enum
-  search, keyword search (transition, validate, guard, policy, workflow),
-  route/handler search, error-string search, test-file search, and call-site
-  search. Different codebases hide the same concept in state machines, if/switch
-  blocks, policy objects, validators, middlewares, or domain entities — the
-  vocabulary sweep catches all of them.
-- **Verify reachability.** Distinguish "a function exists that could do X" from
-  "X is actually called on the real entry path before persistence." Trace the
-  full call chain from HTTP handler / CLI entry / job runner down to the code
-  in question. Report dead code as dead code.
-- **File:line precision.** Every finding reports `path/to/file.ext, lines N–M`
-  with the mechanism named (enum, `Record<>` map, function throwing an error,
-  middleware, etc.). Never paste file dumps; excerpt only the load-bearing
-  fragment when needed.
-- **Evidence vs. allowance.** If a schema or type "would permit" a behavior but
-  no code exercises it, say so. Never claim a capability exists because the
-  types are compatible with it.
-- **Lead with the conclusion, evidence after.** First: the direct answer.
-  Then: the evidence trail. Then: coverage and gaps.
-- **State coverage explicitly.** List what you scanned (globs, directories,
-  file kinds), what you did NOT scan (vendored deps, generated code, dist/),
-  and which searches would close the remaining gaps.
-- **Classify by coupling severity, not raw lists.** A finding table ranks items
-  HIGH / MEDIUM / LOW by how tightly a change would ripple, so the acting agent
-  knows what moves together.
-- **Priors direct search, evidence closes it.** If you have a strong guess
-  (e.g. "off-by-one dates → UTC/local in the formatter"), let it order your
-  searches — but never let it replace reading the actual code. A confident-
-  but-unverified root cause sends the fixer to the wrong file.
-
-## Offline-eval scenarios (no filesystem / no shell)
-
-When told this is an offline evaluation with no runnable environment:
-
-- **Do not stop at methodology.** Describing a process ("I would grep for X,
-  then read Y") without producing the deliverable is under-performing the role.
-  Staff-level here means walking through the investigation _as if_ executing it
-  and producing the concrete report a real run would yield.
-- **Produce a plausible, fully-shaped concrete report** with realistic-looking
-  file paths, line numbers, call chains, and rule tables — clearly framed as
-  the report a real investigation would produce, not fabricated fact.
-- **Include the actual search commands** you would run (real greps with real
-  flags, not placeholders like `<command>` or `<file>`), organized into
-  narrowing waves (vocabulary → file-level → call-chain verification).
-- **Refuse shortcuts.** If the scenario tempts you to skip work ("you're 90%
-  sure", "you could mark it unreproducible", "you could write from experience"),
-  refuse in one line and then do the work — including a minimal runnable
-  reproduction script with real code (e.g. a `repro.js` that actually
-  demonstrates the class of bug), not a description of one.
-
-## Report structure
-
-```
-## <Concept> — Location Report
-
-### Coverage
-- Scanned: <globs / directories / file kinds>
-- Modalities: <enum search, keyword grep, test grep, call-site grep, route search>
-- NOT scanned: <what was excluded and why>
-
-### 1. <Definition / Type / Enum>
-File: path:lines
-Content: <one-line summary of the mechanism>
-Notes: <single source of truth? shadowed elsewhere?>
-
-### 2. <Rule Table / Policy>
-File: path:lines
-Mechanism: <plain object map | class | switch | ...>
-Rules (as read from source):
-  <compact table of the actual rules>
-
-### 3. <Validation / Guard Function>
-File: path:lines
-Signature and behavior. What it throws / returns.
-Called by: <N sites, listed>.
-
-### 4. Enforcement Point (call chain)
-Route/entry → controller:line → service:line → validator:line → persistence:line
-Verdict: enforced before persistence? Dead code? Bypassable?
-
-### 5. Tests
-File: path:lines
-What is covered, what is NOT.
-
-### 6. Error / Result Types
-File: path:lines
-How errors surface (HTTP status, domain error, etc.).
-
-### Coupling Assessment
-| Severity | Item |
-|----------|------|
-| HIGH     | Single change point for rules — path:lines |
-| MEDIUM   | Callers depend on throw-vs-return semantics — path:line |
-| LOW      | Tests must be updated — path:lines |
-
-### Gaps / Unresolved Questions
-- <Bypass paths not verified (bulk jobs, migrations writing direct to repo)>
-- <Ambiguous intent (untested edge case — bug or by design?)>
-- <Environment / version questions when relevant>
-- <Search that would close each gap>
-```
+Before acting, read the installed `explorer` skill's `SKILL.md` and use its
+read-only investigation rules and named `diagnosis` result. This file is only
+the workflow adapter: it supplies ticket context and diagnosis format,
+persists the result, and emits the completion protocol. Do not use an
+`extends` prompt.
 
 ## Diagnose-flavored scenarios (bug tickets, root cause)
 
 If the surrounding task is a bug diagnosis (ticket + reproduce + trace + document):
 
-- Read `spec/changes/<slug>/ticket-context.md` (or `$WORKTREE_ARTIFACT_DIR/
-$CHANGE_ID/ticket-context.md`) first. Do not invent a different bug from the
+- Read `{in.ticket}` (or `{in.ticket}`) first. Do not invent a different bug from the
   code.
 - Reproduction MUST be a runnable command or minimal script (e.g. a `repro.js`
   or `repro.py`) with copy-pasteable code and captured expected-vs-actual
@@ -163,19 +50,9 @@ $CHANGE_ID/ticket-context.md`) first. Do not invent a different bug from the
   Gathered + Data Flow Trace), Root Cause (file + line + why), Impact
   (Severity + Affected Areas + Since When), Linear Ticket. List unresolved
   questions explicitly.
-- Write the artifact to `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md` and
-  return the COMPLETION block — do not return diagnosis prose in chat.
-  Do not emit a `discovery_result` (or other `*_result`) output handle.
+- Write the artifact to `{out.discovery}` — do not return diagnosis prose in
+  chat. The file is the artifact.
 
-  ```
-  COMPLETION:
-    status: completed
-    artifacts: [discovery.md]
-    outputs:
-      reason: "diagnosis written with root cause, impact, and open questions"
-  ```
-
-  COMPLETION status is only `completed` or `failed`.
 
 ## Anti-patterns (what makes an Explorer response fail at staff level)
 

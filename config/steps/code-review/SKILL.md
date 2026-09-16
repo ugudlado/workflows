@@ -8,37 +8,13 @@ user-invocable: true
 
 **Intent:** Run implementation code-review checks and decide pass/retry.
 
-## Code Reviewer
+## Capability
 
-You review diffs for defects and policy violations, and you own the verdict.
-
-### Rules
-
-- Judge against documented project policy and public-contract definitions, not
-  personal preference. Overrule prior reviews explicitly when they conflict
-  with policy, and say why.
-- Before blaming the diff for a failure, verify it on the base branch and in
-  isolation; distinguish pre-existing flakes from regressions, and flag flakes
-  for separate tracking instead of blocking or ignoring them.
-- Treat speculative abstraction (unused config, one-implementation interfaces,
-  layers "for later") as a real defect: request deletion to the minimum that
-  ships the feature and name the concrete maintenance cost.
-- Give precise verdicts with evidence. No soft "consider simplifying" when you
-  mean "remove this".
-
-## Inputs
-
-- `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml` — per-task
-  `status` from implement (source of truth for what landed this pass).
-- `design.md` (optional, at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`)
-
-## Outputs
-
-- `code_review_report` — COMPLETION verdict handle (`pass` / `needs_work` /
-  `incomplete_phase`).
-- Artifact: `code-review.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md`.
-- On needs_work: updated `tasks.yaml` (reopened tasks with `reviews[]` and/or
-  new `fix-N` tasks).
+Before acting, read the installed `code-reviewer` skill's `SKILL.md` and use
+its review rules and named `review` result. This file is only the workflow
+adapter: it gathers workflow evidence, supplies scoring policy, persists the
+report, queues findings on tasks, and maps the verdict to workflow status. Do
+not use an `extends` prompt.
 
 ## Instructions
 
@@ -54,9 +30,8 @@ You review diffs for defects and policy violations, and you own the verdict.
    non-zero exit is a critical correctness finding — cannot pass this round.
    If no verify command is discoverable at all: this is itself a critical
    finding in spec_compliance (missing quality gate) — cannot pass this
-   round. Write code-review.md noting what was searched and what the repo
-   should document, and return COMPLETION with `status: failed` per step 9
-   below.
+   round. Write `{out.code_review}` noting what was searched and what the
+   repo should document, and report `verdict: needs_work` per step 9 below.
 3. Score each dimension separately on 1-10 using the same caps and rubric:
    - Dimensions: spec_compliance, correctness, security, simplicity, code_quality
    - For each dimension:
@@ -95,8 +70,7 @@ You review diffs for defects and policy violations, and you own the verdict.
    - Read design.md for acceptance criteria, using the format contract owned by
      design (§ Design Format Contract).
    - **Patch schema:** when `design.md` is absent, read acceptance criteria from
-     `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
-     (`spec/changes/<slug>/ticket-context.md`) instead.
+     `{in.ticket}` instead.
      The ticket AC section is the contract — verify each checkbox item with evidence.
    - For each acceptance criterion:
      a. Run the verification check (test, manual check, build gate, or file inspection).
@@ -113,23 +87,12 @@ You review diffs for defects and policy violations, and you own the verdict.
      - Do not trust earlier phase counts.
      - Record fresh search result as evidence.
    - If any AC fails: treat as a critical finding in spec_compliance dimension.
-7. Write the full human-readable report to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md.
-8. If overall >= 8 (min_code_review_score, step-owned) and no critical findings: PASS.
-   Return COMPLETION:
-   ```
-   COMPLETION:
-     status: completed
-     outputs:
-       reason: "code review pass — overall <N>"
-       code_review_report: {verdict: pass}
-     review_score:
-       overall: <N>
-       dimensions: {spec_compliance: <N>, correctness: <N>, security: <N>, simplicity: <N>, code_quality: <N>}
-     artifacts: [code-review.md]
-   ```
+7. Write the full human-readable report to {out.code_review}.
+8. If overall >= 8 (min_code_review_score, step-owned) and no critical
+   findings: PASS — report `verdict: pass`.
 9. If FAIL:
-   a. For each finding, record it against `tasks.yaml` (keep `code_review_report`
-   and `code-review.md` as the full report — tasks carry the actionable queue):
+   a. For each finding, record it against `{out.tasks}` (keep
+   `{out.code_review}` as the full report — tasks carry the actionable queue):
    1. **Prefer reopen** when an existing task owns the finding:
       - Owner = task whose `files` cover the finding's primary path, or whose
         `id` is named in the finding. Prefer the most specific completed task.
@@ -145,22 +108,10 @@ You review diffs for defects and policy violations, and you own the verdict.
       - Seed `reviews` with the same `{at, comment}` entry.
    3. Do NOT suggest refactoring or unrelated improvements. One finding →
       one reopen or one new `fix-N` (never both for the same finding).
-      b. Write tasks.yaml back to disk.
-      c. Return COMPLETION with `status: failed` — the engine routes back via the
+      b. Write `{out.tasks}` back to disk.
+      c. Report `verdict: needs_work` — the engine routes back via the
       workflow's `on_failure` edge. Do NOT implement retry counting here; the
-      engine enforces `max_retries` on the node. COMPLETION status is only
-      `completed` or `failed`.
-   ```
-   COMPLETION:
-     status: failed
-     outputs:
-       reason: "code review needs_work — overall <N>; findings queued on tasks"
-       code_review_report: {verdict: needs_work}
-     review_score:
-       overall: <N>
-       dimensions: {spec_compliance: <N>, correctness: <N>, security: <N>, simplicity: <N>, code_quality: <N>}
-     artifacts: [code-review.md, tasks.yaml]
-   ```
+      engine enforces `max_retries` on the node.
 
 ### Rules (constraints on how)
 
@@ -179,15 +130,15 @@ You review diffs for defects and policy violations, and you own the verdict.
 - Artifact structural compliance with format contracts (owned by each producer step's prompt.md) is a review criterion.
 - When a finding requires a new requirement, the fix MUST update design.md (AC + design) and tasks.yaml atomically — partial updates that sync only one artifact leave the feature in an inconsistent state and will fail re-review.
 - For tasks that spec describes as a rewrite, projection, or byte-compatible replacement of an existing producer, AC verification MUST include a value/shape parity check against at least one real payload from the prior implementation — key-presence alone is insufficient. Reviewer must run both the old producer and the new one on a real archived fixture and diff the top-level output keys; any key reduction is an important finding.
-- Before scoring the phase, read tasks.yaml and check if any tasks still have `status: pending`. If any pending tasks exist and are not explicitly quarantined in state.yaml, write code-review.md with verdict incomplete_phase listing the pending task IDs — return COMPLETION with `status: failed` and outputs.code_review_report: {verdict: incomplete_phase}, and do NOT include review_score. `status: failed` is required so the `on_failure` edge fires back to implement — without it the dispatcher treats the step as completed and silently advances past the implement phase with tasks still pending. This guards against dispatcher bugs or manual advances that reach code-review before all tasks are complete. <!-- updated: 2026-05-25, source: orc-76, cycle: 1, repo: orchestrator -->
+- Before scoring the phase, read tasks.yaml and check if any tasks still have `status: pending`. If any pending tasks exist and are not explicitly quarantined in state.yaml, write `{out.code_review}` listing the pending task IDs and report `verdict: incomplete_phase`, with no review_score. A non-pass verdict is required so the `on_failure` edge fires back to implement — reporting pass with tasks still pending silently advances the workflow past the implement phase. This guards against dispatcher bugs or manual advances that reach code-review before all tasks are complete. <!-- updated: 2026-05-25, source: orc-76, cycle: 1, repo: orchestrator -->
 - Spot audit: pick one `evidence.verified` entry from a completed `implement` step in step_history and re-run its `check` command. A mismatch with the recorded `result` is a critical correctness finding (fabricated evidence) — this is the only enforcement on self-reported evidence, so treat a mismatch as severe.
 
 ## Verify
 
-- Code review report written to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/code-review.md
+- Code review report written to {out.code_review}
 - When code_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing code-review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
 - Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed. No other combination is valid.
 - When code_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
 - All critical findings have either a reopened task with a new `reviews` entry, a new `fix-N` task, or are resolved
-- On needs_work, `tasks.yaml` is updated and listed in COMPLETION artifacts alongside `code-review.md`
+- On needs_work, `{out.tasks}` is updated alongside `{out.code_review}`
 - phase-signoff will BLOCK if this step's entry is missing from step_history — this step is not optional

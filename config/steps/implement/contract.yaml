@@ -1,6 +1,7 @@
 id: implement
 version: 2
 kind: judgment
+prompt: SKILL.md
 max_turns: 120
 tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.commit]
 side_effects: [write:git]

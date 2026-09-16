@@ -6,75 +6,18 @@ user-invocable: true
 
 # Implement Tasks
 
-**Intent:** Work through all pending tasks in `tasks.yaml` in dependency order. For each
-task: implement the change, run verification, commit, then update `status: completed` in
-`tasks.yaml`. Skip tasks already marked `status: completed`.
+**Intent:** Work through all pending tasks in `tasks.yaml` in dependency order. Build
+ready batches from `depends_on`; independent tasks with disjoint `files` may be
+delegated to separate agents concurrently. Shared-file tasks stay serial. Skip tasks
+already marked `status: completed`.
 
-## Developer — General Charter
+## Capability
 
-Portable staff-level rules for the developer role, independent of stack or
-project. Project-specific rules live with the project's prompt and learnings.
-
-### Rules
-
-- **TDD is red-green-refactor, demonstrated — not declared.** Work in three
-  distinct runs of the suite, each with its expected outcome stated before you
-  run it: (1) RED — write the failing test with real assertions, run, confirm
-  it fails for the right reason (name the expected failure); (2) GREEN —
-  implement the minimum to pass, run, confirm green (state the expected
-  counts); (3) REFACTOR — make named, concrete improvements (this duplication,
-  that naming, this dead branch — not "clean up"), run again, confirm still
-  green. Never batch test + implementation into one write-everything-then-run
-  step, and never refer to the cycle in the abstract while actually skipping
-  its runs. When describing a plan, walk the actual sequence with the actual
-  content of each step.
-- **Plan before implementing.** Before writing code, have a plan with two
-  parts: context (what exists today, which files/components are affected, what
-  constraints apply) and an ordered subtask breakdown, each subtask with its
-  own verification. If a plan already exists, don't execute it on trust —
-  validate it against the actual code first; if exploration reveals drift
-  (code moved, assumptions stale) or a simpler path, improve the plan, state
-  what changed and why, then work the improved plan. Never code straight from
-  a ticket without a plan, and never follow a stale plan into code that no
-  longer matches it.
-- **Understand impact across the codebase before changing shared code.** Map
-  every call site of anything shared before editing it. When a ticket asks for
-  a localized behavior change, commit to the scoped solution at the boundary
-  the ticket names instead of mutating shared code consumed elsewhere — state
-  the tradeoff and decide. Prefer the simpler, narrower change; fewer lines in
-  a shared helper is not simpler if it widens the blast radius.
-- **Complete all tasks.** Partial completion is not completion: never
-  reclassify in-scope work as follow-ups to exit early. Pressure of budget or
-  tedium is a reason to stop and report honestly, never to silently shrink
-  scope. If genuinely unable to finish, mark work explicitly incomplete with
-  reasons rather than claiming done.
-- **Verify every task on all its surfaces.** For work that spans backend and
-  UI, name and run concrete checks on both sides plus the integration: hit the
-  actual endpoint with the actual params and inspect the payload, drive the
-  actual UI interaction and observe the change, and confirm the UI really
-  sends what the backend expects. Generic "run the verify commands" is not
-  verification of a full-stack task. Report what was exercised and what
-  remains unverified.
-- **Adhere to existing patterns.** Before implementing, read how neighboring
-  code solves the same shape of problem and conform to it. Consistency beats a
-  faster or personally preferred style. If the established pattern seems wrong
-  for this case, raise it explicitly — never silently diverge, even when the
-  shortcut would work and pass tests.
-
-## Inputs
-
-- `design.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md` — design, acceptance
-  criteria, and component breakdown.
-- `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml` — ordered task list
-  with `status` field per task.
-- **Patch schema** runs may have neither file — see the Pre-flight stub below.
-
-## Outputs
-
-- Updated `tasks.yaml` with `status: completed` on every finished task
-  (source of truth for what landed this pass — no separate `*_result` handle).
-- COMPLETION may summarize `tasks_completed`, `tasks_skipped`, and
-  `known_concerns`; those fields are informational only.
+Before acting, read the installed `developer` skill's `SKILL.md` and use its
+implementation rules and named `implementation` result. This file is only the
+workflow adapter: it selects pending tasks, supplies file and verification
+limits, commits completed work, records task progress, and emits the completion
+protocol. Do not use an `extends` prompt.
 
 ## Instructions
 
@@ -87,23 +30,22 @@ project. Project-specific rules live with the project's prompt and learnings.
    **Only one of the two present** (design.md without tasks.yaml, or vice
    versa) is not the patch case — that's a broken/partial prior run. Do not
    invent scope from the codebase; fail immediately instead:
-   ```text
-   COMPLETION:
-     step_id: implement
-     status: failed
-     outputs:
-       reason: "missing inputs: <the absent file>"
-       reset_to: design
-   ```
 3. Read `tasks.yaml`. Identify all tasks where `status` is `pending` (or absent).
    Tasks with `status: completed` are done — skip them entirely.
    Reopened tasks (`status: pending` with a non-empty `reviews` list) are in
    scope: treat the latest `reviews[].comment` as the work order for this pass.
 4. Resolve execution order: respect `depends_on` — do not start a task until all
    its dependencies have `status: completed`.
-5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and return COMPLETION `status: failed` with `outputs.reason` — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
+5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and fail the step with a reason — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
 
 ### Per-task loop
+
+For a ready batch, use the available agent delegation mechanism when it can preserve
+the task's file scope and verification commands. Give every worker the task id,
+declared files, dependencies, and the instruction to return only its implementation
+result and `task_updates`. Do not let workers edit `tasks.yaml` directly. If delegation
+is unavailable, process the same batch serially; correctness takes precedence over
+parallelism.
 
 For each pending task in dependency order:
 
@@ -121,28 +63,17 @@ For each pending task in dependency order:
    - Stage only files changed by this task — do NOT `git add -A`.
    - Skip the commit if `git status --porcelain` shows no changes.
    - Include `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
-7. **Update `tasks.yaml`**: on this task entry set:
+7. **Return a `task_updates` entry** for this task:
    - `status: completed`
    - `tokens_in: <input tokens used>`
    - `tokens_out: <output tokens used>`
    - `duration_s: <wall-clock seconds from task start to commit>`
-     Write the file immediately after committing.
+     The orchestrator merges it into `tasks.yaml` immediately after committing.
 8. Move to the next pending task.
 
 ### After all tasks
 
 **All tasks committed and verified** — return:
-
-```
-COMPLETION:
-  status: completed
-  artifacts: [tasks.yaml]
-  outputs:
-    reason: "all tasks committed and verified (<N> completed, <N> skipped)"
-    tasks_completed: <N>
-    tasks_skipped: <N>
-    known_concerns: [<list or empty>]
-```
 
 Hit a non-mainline outcome — zero tasks attempted, or partial progress then an
 unrecoverable blocker? Read `developer/reference/edge-cases.md`
@@ -159,13 +90,14 @@ Facing a design contradiction, missing design coverage, or scope ambiguity? See
   from the list, note it in `known_concerns` — do NOT modify unlisted files.
 - Run every `verify` command before marking a task completed. Fix failures before
   moving on.
-- Update `tasks.yaml` status immediately after each commit — do not batch updates.
+- Never edit `tasks.yaml` directly when running in a parallel batch; the recorder owns
+  the read-merge-write under its worktree lock.
 - When a task removes or renames a sentinel, type, or parameter, grep the same file
   for docstrings or inline comments referencing the old value and update them
   atomically — stale docstrings cap `code_quality` to 7 at phase review.
 - `verify` commands are repo-root-relative — run them from `$REPO_ROOT`.
 - Never `git add -A` — stage only task files.
-- If git commit commands cannot be executed (shell rejected, permission error, or any failure that prevents the commit from landing in HEAD), do NOT mark the task `status: completed` in `tasks.yaml` and do NOT return COMPLETION `status: completed` as if the task finished — record the failure in `known_concerns` AND stop implementation. A task is only complete when its commit is confirmed in `git log`. Claiming completion with uncommitted work causes the phase reviewer to flag a critical finding (CF) that blocks the phase.
+- If git commit commands cannot be executed (shell rejected, permission error, or any failure that prevents the commit from landing in HEAD), do NOT mark the task `status: completed` in `{out.tasks}` and do NOT finish the step successfully as if the task landed — record the failure in `known_concerns` AND stop implementation. A task is only complete when its commit is confirmed in `git log`. Claiming completion with uncommitted work causes the phase reviewer to flag a critical finding (CF) that blocks the phase.
 
 ## Verify
 

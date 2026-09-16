@@ -10,48 +10,12 @@ user-invocable: true
 (design.md, tasks.yaml) in a single architect pass. Show artifacts to user for review
 on interactive schemas (feature/bugfix); autopilot runs straight through.
 
-## Architect
+## Capability
 
-You design changes before they are implemented. Your output is a design another
-developer can build from without guessing.
-
-### Rules
-
-- Name every ambiguous constraint (units, types, boundaries) explicitly, state
-  the assumption you chose and why, and keep the design safe under the stricter
-  interpretation when in doubt.
-- Design to the acceptance criterion, not the ticket's suggested mechanism.
-  Prefer extending an existing working mechanism over introducing a new layer;
-  reserve new infrastructure for a stated, proven need.
-- When decomposing work for parallel implementation, identify shared-file
-  conflict risk up front and sequence, isolate, or assign a single owner for
-  those edits, with an explicit reconciliation step. Concretely: any two
-  tasks with no `depends_on` path between them must have disjoint `files:`
-  lists — see `architect/reference/parallel-safety.md` for why the engine
-  can't enforce this itself and what to do when two tasks need the same
-  file. `validate-tasks-yaml.sh` flags overlaps as a warning; it does not
-  block on them.
-- State tradeoffs honestly and recommend by context, not by novelty.
-
-## Inputs
-
-- `discovery.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/discovery.md`
-  (`spec/changes/<slug>/discovery.md`) — the discovery brief this step reads for
-  constraints, integration points, and recommended approach.
-- Ticket body at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
-  (`spec/changes/<slug>/ticket-context.md`) when present — written by
-  `load-ticket-context`. Source of truth for scope and ACs.
-
-## Outputs
-
-- Artifact `design.md` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/design.md`
-  (`spec/changes/<slug>/design.md`) — includes Approaches Considered and
-  Selected Approach (name, complexity XS–XL, rationale).
-- Artifact `tasks.yaml` at `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/tasks.yaml`
-  (`spec/changes/<slug>/tasks.yaml`).
-- `discovery.md` Key Decisions updated with the chosen direction.
-  No COMPLETION `design_direction` / `complexity` / `updated_artifact_set`
-  handles — those live in the files above.
+Before acting, read the installed `designer` skill's `SKILL.md` and use its
+design rules and named `design`, `tasks`, and `decisions` results. This file is
+only the workflow adapter: it supplies workflow inputs, persists those results,
+and emits the completion protocol. Do not use an `extends` prompt.
 
 ## Flags
 
@@ -74,18 +38,9 @@ APPROACH:
 **Check inputs first.** If `discovery.md` does not exist at the path above,
 do not invent scope from the codebase — fail immediately:
 
-```text
-COMPLETION:
-  step_id: design
-  status: failed
-  outputs:
-    reason: "missing inputs: discovery.md"
-    reset_to: explore
-```
-
 ## Part 1: Design Selection
 
-1. Read the discovery brief at $WORKFLOW_STATE_DIR/$CHANGE_ID/discovery.md for
+1. Read the discovery brief at {in.discovery} for
    constraints, integration points, open questions, and recommended approach.
 2. Generate 2-3 design approaches with trade-offs:
    - Each approach: name, description, pros, cons, complexity (XS/S/M/L/XL).
@@ -121,7 +76,7 @@ COMPLETION:
      - Producing tasks.yaml? First Read
        `architect/reference/tasks-format.md`.
        c. Generate using available context (discovery brief, design direction, change description).
-       d. Write to $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/<file>.
+       d. Write design.md to `{out.design}` and tasks.yaml to `{out.tasks}`.
 
    **Required sections (degradation floor — even without reading the format
    contract, produce these exact sections/fields so a skipped Read yields the
@@ -143,8 +98,7 @@ COMPLETION:
 7. Generate tasks.yaml:
    - Read design.md for approach, component breakdown, and acceptance criteria.
      (Product-level motivation/impact lives on the ticket — read
-     `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md` /
-     `spec/changes/<slug>/ticket-context.md` when present.)
+     `{in.ticket}` when present.)
    - If ux-artifacts.yaml exists: reference ux-prototype.html in UI task descriptions.
    - Generate the fewest tasks that cover all acceptance criteria.
    - Write tasks.yaml using the Tasks YAML Format Contract (Read
@@ -159,31 +113,14 @@ COMPLETION:
      design-review retries on BKG-423, BKG-549, and BKG-575.
      <!-- promoted: 2026-07-28 from scenarios tdd-red-needs-xfail / tdd-red-bun-test-todo-not-plain-test / tdd-red-runner-convention-check -->
 
-8. Return COMPLETION (driver calls orchestrator done):
-   ```
-   COMPLETION:
-     status: completed
-     artifacts: [design.md, tasks.yaml]
-     outputs:
-       reason: "design.md and tasks.yaml ready for review/implement"
-   ```
-   Selected approach name and complexity must already be written into
-   `design.md` (Selected Approach) and `discovery.md` (Key Decisions).
-   Do not emit `design_direction`, `complexity`, `updated_artifact_set`, or
-   path-keyed `outputs:` entries beyond `reason` — `artifacts` plus `reason` is enough.
-   COMPLETION status is only `completed` or `failed`.
+8. Report the selected approach's `complexity` (XS/S/M/L/XL) as a declared
+   output value. The approach name and rationale must already be written into
+   `design.md` (Selected Approach) and `discovery.md` (Key Decisions) — do not
+   restate them as output values.
 
-## Part 3: Artifact Review (interactive schemas only)
-
-9. If state.yaml's `schema` is `autopilot`: skip this pause and return STATUS:
-   completed immediately — an autonomous run has no human to answer the prompt.
-   Otherwise (feature/bugfix):
-   - Print a summary of each artifact written: file name, section count, task count.
-   - Print the full contents of tasks.yaml so the user can review scope.
-   - Pause and prompt: "Review design.md, tasks.yaml in
-     $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/. Reply 'ok' to continue, or describe changes needed."
-   - If the user requests changes: apply them to the relevant artifacts and re-present.
-   - Once confirmed: proceed to next step.
+   Do not pause for human review here. The recipe's `design-signoff` gate is
+   what shows `design.md` and `tasks.yaml` to a human and collects approval;
+   this step just writes the artifacts and finishes.
 
 ### Rules (constraints on how)
 
@@ -211,9 +148,9 @@ COMPLETION:
 
 ## Verify
 
-Before returning COMPLETION, confirm:
+Before finishing, confirm:
 
-- design.md exists in $WORKTREE_ARTIFACT_DIR/$CHANGE_ID/
+- design.md exists at `{out.design}`
 - tasks.yaml exists and passes validate-tasks-yaml.sh
 - design.md has Acceptance Criteria section with testable criteria
 - tasks.yaml follows the Tasks YAML Format Contract
