@@ -1,38 +1,24 @@
-# Example models.yaml — copy/edit, or pass with:
+# Example models.yaml — copy and edit, or pass it directly:
 #   orchestrator run TICKET --models-config ./models.example.yaml
-
-tools:
-  claude:
-    binary: claude
-    args_template:
-      ["--model", "{model_id}", "-p", "--output-format", "json", "{prompt}"]
-  cursor:
-    binary: cursor-agent
-    args_template:
-      [
-        "-p",
-        "--output-format",
-        "json",
-        "--model",
-        "{model_id}",
-        "--force",
-        "{prompt}",
-      ]
-  codex:
-    binary: codex
-    args_template: ["exec", "--json", "--prompt", "{prompt}"]
-  pi:
-    binary: pi
-    args_template: ["--mode", "json", "@{prompt_file}"]
+#
+# Only `models:` and `step_models:` are read. See config/models.yaml for the
+# full explanation of chains, PATH gating, and layer precedence.
 
 models:
   strong:
-    - { tool: claude, model_id: claude-opus-5 }
+    - { model_id: claude-opus-5, tool: claude }
+
   standard:
-    - { tool: claude, model_id: claude-sonnet-5 }
+    - { model_id: claude-sonnet-5, tool: claude }
+
+  fast:
+    - { model_id: claude-haiku-4-5, tool: claude }
+
+  # A list is a fallback chain: the first candidate whose `tool` is on PATH
+  # wins, so a host without cursor-agent falls through to claude.
   code:
-    - { tool: cursor, model_id: composer-2.5 }
-    - { tool: claude, model_id: claude-sonnet-5 }
+    - { model_id: composer-2.5, tool: cursor }
+    - { model_id: claude-sonnet-5, tool: claude }
 
 step_models:
   design: strong
@@ -43,4 +29,8 @@ step_models:
   learn: standard
   design-review: standard
   ux-critique: standard
+  verify-changes: standard
+  human-review: standard
   implement: code
+  intake-research: code
+  synthesize-findings: code

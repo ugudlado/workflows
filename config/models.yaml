@@ -1,68 +1,46 @@
-# Agent transports.
+# Model routing for this pack.
 #
-# transport: acp  -> Agent Client Protocol over stdio (JSON-RPC). One negotiated
-#                    interface replaces the per-tool args_template AND the
-#                    per-tool stdout adapter in usage_adapters.py.
-# transport: argv -> the legacy path: spawn a CLI, parse its own JSON dialect.
-#                    Kept for agents with no ACP adapter. Default when omitted.
+# The engine reads exactly two blocks from this file (model_routes.py):
 #
-# Verified 2026-08-18:
-#   @zed-industries/claude-agent-acp  0.23.1
-#   @zed-industries/codex-acp         0.16.0
-#   cursor-agent acp                  native subcommand, protocol v1
-tools:
-  claude:
-    binary: npx
-    transport: acp
-    acp_args: ["-y", "@zed-industries/claude-agent-acp"]
-
-  codex:
-    binary: npx
-    transport: acp
-    acp_args: ["-y", "@zed-industries/codex-acp"]
-
-  cursor:
-    binary: cursor-agent
-    transport: acp
-    acp_args: ["acp"]
-
-  # ---- legacy argv transport, retained as the fallback rung -----------------
-  claude-cli:
-    binary: claude
-    transport: argv
-    args_template:
-      ["--model", "{model_id}", "-p", "--output-format", "json", "{prompt}"]
-  hermes:
-    binary: hermes
-    args_template: ["-z", "{prompt}", "--usage-file", "{usage_file}"]
-  pi:
-    binary: pi
-    transport: argv
-    args_template: ["--mode", "json", "@{prompt_file}"]
+#   models:       tier alias -> route. A route is either a scalar
+#                 {model_id, tool} or a LIST, which is a PATH-gated fallback
+#                 chain: the first candidate whose `tool` resolves as a
+#                 command on PATH wins. A scalar is never PATH-gated — it
+#                 dispatches as written and fails at invoke if absent.
+#   step_models:  step_id -> tier alias. This is where a step's model lives;
+#                 a contract that declares `model:` is rejected (protocol v2
+#                 principle 7).
+#
+# A chain gates on the TOOL NAME itself — `tool: claude` asks whether
+# `claude` is on PATH. There is no longer a `tools:` block mapping a tool to
+# a binary and an argv template: the engine stopped spawning vendor CLIs, so
+# transports, args_template, and acp_args are all dead keys and were removed.
+#
+# Precedence across files (highest wins): --models-config /
+# ORCHESTRATOR_MODELS_CONFIG > this file > ~/.orchestrator/models.yaml >
+# bundled defaults. The highest layer naming an alias owns it WHOLESALE —
+# there is no field-level or element-wise merging across layers.
+#
+# Every tier must resolve to a model_id with a pricing.yaml row.
+# test_every_routed_tier_has_a_price fails the build otherwise, because an
+# unpriced model records no cost at all rather than a wrong one.
 
 models:
-  # A list is a PATH-gated fallback chain: first candidate whose binary
-  # resolves wins. ACP first, the old CLI second — so a host without npx
-  # keeps working exactly as it does today.
   strong:
     - { model_id: claude-opus-5, tool: claude }
-    - { model_id: claude-opus-5, tool: claude-cli }
+
   standard:
     - { model_id: claude-sonnet-5, tool: claude }
-    - { model_id: claude-sonnet-5, tool: claude-cli }
+
+  fast:
+    - { model_id: claude-haiku-4-5, tool: claude }
+
   code:
     - { model_id: composer-2.5, tool: cursor }
     - { model_id: claude-sonnet-5, tool: claude }
-    # Codex is wired as an ACP tool above and is one `- { model_id: <id>, tool:
-    # codex }` line away from being a rung here. It is left out on purpose:
-    # test_every_routed_tier_has_a_price fails the build if a routed tier
-    # resolves to a model with no pricing.yaml row, and adding the rung without
-    # a verified price would silently record $0 for every codex step. Add the
-    # pricing row first, then the rung.
-  # ACP research synthesize — local cursor-agent (hermes optional elsewhere).
-  acp-light:
-    - { model_id: composer-2.5, tool: cursor }
-    - { model_id: claude-sonnet-5, tool: claude }
+    # `codex` is deliberately not a rung here. Adding one without first
+    # adding its pricing.yaml row would silently record $0 for every codex
+    # step. Price it first, then add the rung.
 
 step_models:
   design: strong
@@ -73,8 +51,8 @@ step_models:
   learn: standard
   design-review: standard
   ux-critique: standard
-  implement: code
   verify-changes: standard
   human-review: standard
-  intake-research: acp-light
-  synthesize-findings: acp-light
+  implement: code
+  intake-research: code
+  synthesize-findings: code
