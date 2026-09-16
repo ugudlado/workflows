@@ -160,6 +160,15 @@ def test_real_schema_generates_plan(tmp_path, monkeypatch, schema_name):
         )
         for node in nodes:
             step_id = node["id"]
+            if node.get("kind") == "gate":
+                # Protocol v2 §7: a gate has no contract file — the recipe
+                # entry is the contract, and generate_plan promotes it with
+                # kind: gate rather than skipping it.
+                assert node.get("status") == "pending", (
+                    f"{schema_name}/{phase_name}/{step_id}: gate node status "
+                    f"must be 'pending' at init"
+                )
+                continue
             # Accept either the directory form (<id>/contract.yaml) or the legacy
             # flat form (<id>.yaml); select-workflow.yaml stays as a flat file.
             contract_path = _REAL_HOME / "steps" / step_id / "contract.yaml"
@@ -254,18 +263,21 @@ def test_patch_schema_retry_edges():
     assert review.get("max_retries") == 8  # non-default, retained
 
 
-def test_patch_schema_has_light_design_only():
-    """patch.yaml carries a light design step but skips the heavy design phase.
+def test_patch_schema_skips_the_design_phase_entirely():
+    """patch.yaml goes ticket -> implement with no design phase at all.
 
-    patch is the lightweight path: it keeps `design`
-    (added in ec0c2a5) but skips the heavy steps — explore, diagnose,
-    design-review, ux-design.
+    patch is the lightweight path. It previously kept a `design` step while
+    skipping explore/diagnose, which left `design`'s `in.discovery` with no
+    upstream producer — and the design charter fails hard on a missing
+    discovery.md, so that step could never succeed. Protocol v2's wiring
+    check surfaced it. implement/SKILL.md already documents the branch that
+    derives work from ticket-context.md when design.md and tasks.yaml are
+    both absent, which is the real patch path.
     """
     steps = _schema_step_ids("patch")
-    heavy_design_steps = {"explore", "diagnose", "design-review", "ux-design"}
-    assert heavy_design_steps.isdisjoint(set(steps)), (
-        f"patch.yaml must skip the heavy design phase; found {heavy_design_steps & set(steps)}"
+    design_phase_steps = {"explore", "diagnose", "design", "design-review", "ux-design"}
+    assert design_phase_steps.isdisjoint(set(steps)), (
+        f"patch.yaml must skip the design phase; found {design_phase_steps & set(steps)}"
     )
-    assert "design" in steps
     assert "implement" in steps
     assert steps.index("create-worktree") < steps.index("implement")

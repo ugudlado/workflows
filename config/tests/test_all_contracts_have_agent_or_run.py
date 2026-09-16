@@ -11,7 +11,7 @@ from typing import Set
 import yaml
 
 from orchestrator_next.parser import resolve_prompt_file, ContractError
-from orchestrator_next.workflow_steps import step_id_of
+from orchestrator_next.workflow_steps import is_gate_entry, step_id_of
 
 _CONFIG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _STEPS_DIR = os.path.join(_CONFIG_DIR, "steps")
@@ -30,6 +30,11 @@ def _collect_workflow_steps() -> Set[str]:
         if not data:
             continue
         for entry in data.get("steps") or []:
+            # Protocol v2 §7 gates have no contract file — the recipe entry IS
+            # the contract (show:/approve_as: ride along in the promoted node,
+            # see generate_plan.py where node["kind"] = "gate").
+            if is_gate_entry(entry):
+                continue
             sid = step_id_of(entry)
             if sid:
                 step_ids.add(sid)
