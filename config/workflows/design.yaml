@@ -1,3 +1,8 @@
+name: design
+version: 2
+artifacts_root: spec/changes/{slug}
+inputs:
+  ticket: { type: string }
 steps:
   - check-rerun
   - create-worktree
@@ -6,6 +11,9 @@ steps:
   - design
   - id: design-review
     on_failure: design
+  # Signoff before persist-learnings commits to the pack. Engine side is Phase 3.1.
+  - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
   - learn
-  - persist-learnings
+  - id: persist-learnings
+    requires: impl_token
   - workflow-report

@@ -1,3 +1,8 @@
+name: bugfix
+version: 2
+artifacts_root: spec/changes/{slug}
+inputs:
+  ticket: { type: string }
 steps:
   - check-rerun
   - create-worktree
@@ -6,9 +11,12 @@ steps:
   - design
   - id: design-review
     on_failure: design
+  # Signoff before anything writes outside the run. Engine side is Phase 3.1.
+  - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
   - ticket-start
   - id: implement
     on_failure: design
+    requires: impl_token
   - ticket-review
   - id: code-review
     on_failure: implement

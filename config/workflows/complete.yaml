@@ -1,3 +1,8 @@
+name: complete
+version: 2
+artifacts_root: spec/changes/{slug}
+inputs:
+  ticket: { type: string }
 # Complete-only workflow (ORC-108).
 #
 # CLI: `orchestrator complete <ticket-id>` — same driver as other workflows:
@@ -12,9 +17,15 @@
 #
 # Flags: --repo PATH, plus key=value overrides.
 steps:
+  # Invoking complete IS the merge signal, but the gate makes that explicit and
+  # resumable rather than implicit in the CLI verb. Engine side is Phase 3.1.
+  - { gate: merge-signoff, show: [design, tasks], approve_as: merge_token }
   - mark-change-completed
-  - archive-completed-change
-  - merge-to-main
-  - remove-worktree
+  - id: archive-completed-change
+    requires: merge_token
+  - id: merge-to-main
+    requires: merge_token
+  - id: remove-worktree
+    requires: merge_token
   - ticket-done
   - workflow-report

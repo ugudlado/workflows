@@ -1,3 +1,8 @@
+name: research
+version: 2
+artifacts_root: spec/changes/{slug}
+inputs:
+  ticket: { type: string }
 # Research workflow.
 #
 # CLI: `orchestrator research "<prompt>"` — session-driven via session_cli
@@ -6,7 +11,6 @@
 #
 # Identity: change_id / slug / ticket_id = session_id.
 # Artifacts: the workflow owns placement — see intake-research/SKILL.md
-# ($REPO_ROOT/spec/changes/$CHANGE_ID/intake.json, topic.md, …)
 #
 # intake-research is an agent step: emits status await_input until checklist
 # (topic, audience, depth) is full; then synthesize-findings / workflow-report.

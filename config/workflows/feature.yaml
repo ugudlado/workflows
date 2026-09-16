@@ -1,3 +1,10 @@
+name: feature
+version: 4
+# Artifacts keep the pack's historical location (engine default is
+# .orchestrator/runs/<slug>/artifacts/). Plan Phase 2.1.
+artifacts_root: spec/changes/{slug}
+inputs:
+  ticket: { type: string }
 steps:
   - check-rerun # halt if this feature is already archived (workflow's own decision)
   - create-worktree # creates worktree + branch; writes worktree_path+branch to state
@@ -7,10 +14,13 @@ steps:
   - design
   - id: design-review
     on_failure: design
+  # Signoff before anything writes outside the run. Engine side is Phase 3.1.
+  - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
   - ticket-start # ticket -> In Progress (implement entry)
   - ux-critique
   - id: implement
     on_failure: design
+    requires: impl_token
   - ticket-review # ticket -> Review
   - id: code-review
     on_failure: implement
@@ -22,9 +32,13 @@ steps:
   - learn
   - persist-learnings
   # complete phase (merge / teardown) — runs only after human-review completes
+  - { gate: merge-signoff, show: [design, tasks, code_review], approve_as: merge_token }
   - mark-change-completed
-  - archive-completed-change
-  - merge-to-main
-  - remove-worktree
+  - id: archive-completed-change
+    requires: merge_token
+  - id: merge-to-main
+    requires: merge_token
+  - id: remove-worktree
+    requires: merge_token
   - ticket-done
   - workflow-report
