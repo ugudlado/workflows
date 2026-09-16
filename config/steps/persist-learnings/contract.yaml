@@ -1,3 +1,10 @@
 id: persist-learnings
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [fs.read, fs.write, fs.list, shell.run, git.commit]
+side_effects: [write:git]
+in:
+  proposed_scenarios: { artifact: proposed-scenarios.jsonl, optional: true }
+out:
+  scenarios_appended: { type: number }

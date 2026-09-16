@@ -1,3 +1,11 @@
 id: intake-research
-version: 2
-prompt: SKILL.md
+version: 3
+kind: judgment
+max_turns: 20
+tools: [fs.read, fs.write, fs.list]
+side_effects: []
+in: {}
+out:
+  intake: { artifact: intake.json }
+  topic: { artifact: topic.md, optional: true }
+  complete: { type: boolean }

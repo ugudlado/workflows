@@ -1,3 +1,11 @@
 id: create-worktree
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [fs.read, fs.write, shell.run, git.worktree]
+side_effects: []
+in: {}
+out:
+  created: { type: boolean }
+  worktree_path: { type: string }
+  branch: { type: string }

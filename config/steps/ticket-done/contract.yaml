@@ -1,6 +1,12 @@
 id: ticket-done
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [shell.run]
+side_effects: [write:ticket]
+in: {}
+out:
+  ticket_status_set: { type: string }
 params:
   TICKET_SYNC_STATUS: "Done"
   TICKET_SYNC_LOG_PREFIX: ticket-done

@@ -1,3 +1,12 @@
 id: implement
-version: 1
-prompt: SKILL.md
+version: 2
+kind: judgment
+max_turns: 120
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.commit]
+side_effects: [write:git]
+in:
+  design: { artifact: design.md, optional: true }
+  tasks: { artifact: tasks.yaml, optional: true }
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  tasks: { artifact: tasks.yaml }

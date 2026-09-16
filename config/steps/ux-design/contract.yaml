@@ -1,3 +1,13 @@
 id: ux-design
-version: 5
-prompt: SKILL.md
+version: 6
+kind: judgment
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in:
+  discovery: { artifact: discovery.md }
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  ux_prototype: { artifact: ux-prototype.html, optional: true }
+  ux_artifacts: { artifact: ux-artifacts.yaml, optional: true }
+  skipped: { type: boolean }

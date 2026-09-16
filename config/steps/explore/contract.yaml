@@ -1,3 +1,10 @@
 id: explore
-version: 5
-prompt: SKILL.md
+version: 6
+kind: judgment
+max_turns: 30
+tools: [fs.read, fs.list, shell.run]
+side_effects: []
+in:
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  discovery: { artifact: discovery.md }

@@ -1,3 +1,10 @@
 id: mark-change-completed
-version: 2
+version: 3
+kind: exec
 run: script.sh
+state_mutating: true
+tools: [fs.read, fs.write]
+side_effects: []
+in: {}
+out:
+  marked: { type: boolean }

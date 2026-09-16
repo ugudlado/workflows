@@ -1,3 +1,13 @@
 id: verify-changes
-version: 1
-prompt: SKILL.md
+version: 2
+kind: judgment
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch]
+side_effects: []
+in:
+  design: { artifact: design.md, optional: true }
+  tasks: { artifact: tasks.yaml, optional: true }
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  verification: { artifact: verify-changes.md }
+  verdict: { type: enum, values: [pass, needs_work] }

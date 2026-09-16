@@ -1,3 +1,9 @@
 id: learn
-version: 3
-prompt: SKILL.md
+version: 4
+kind: judgment
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in: {}
+out:
+  proposed_scenarios: { artifact: proposed-scenarios.jsonl, optional: true }

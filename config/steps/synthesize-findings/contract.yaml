@@ -1,3 +1,12 @@
 id: synthesize-findings
-version: 1
-prompt: SKILL.md
+version: 2
+kind: judgment
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in:
+  intake: { artifact: intake.json }
+  topic: { artifact: topic.md, optional: true }
+out:
+  findings: { artifact: findings.md }
+  sources: { artifact: sources.md, optional: true }

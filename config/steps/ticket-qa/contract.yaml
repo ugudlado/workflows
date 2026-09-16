@@ -1,6 +1,12 @@
 id: ticket-qa
-version: 1
+version: 2
+kind: exec
 run: ../../lib/ticket/ticket-sync.sh
+tools: [shell.run]
+side_effects: [write:ticket]
+in: {}
+out:
+  ticket_status_set: { type: string }
 params:
   TICKET_SYNC_STATUS: "Verify"
   TICKET_SYNC_LOG_PREFIX: ticket-qa

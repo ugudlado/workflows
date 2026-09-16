@@ -1,3 +1,13 @@
 id: design
-version: 2
-prompt: SKILL.md
+version: 3
+kind: judgment
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in:
+  discovery: { artifact: discovery.md }
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  design: { artifact: design.md }
+  tasks: { artifact: tasks.yaml }
+  complexity: { type: enum, values: [XS, S, M, L, XL] }

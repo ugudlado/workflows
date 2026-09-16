@@ -1,3 +1,9 @@
 id: merge-to-main
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [shell.run, git.status, git.checkout, git.merge]
+side_effects: [write:git]
+in: {}
+out:
+  merge_record: { type: object }

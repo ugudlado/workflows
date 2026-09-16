@@ -1,3 +1,13 @@
 id: code-review
-version: 5
-prompt: SKILL.md
+version: 6
+kind: judgment
+max_turns: 60
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff]
+side_effects: []
+in:
+  tasks: { artifact: tasks.yaml }
+  design: { artifact: design.md, optional: true }
+out:
+  code_review: { artifact: code-review.md }
+  tasks: { artifact: tasks.yaml }
+  verdict: { type: enum, values: [pass, needs_work, incomplete_phase] }

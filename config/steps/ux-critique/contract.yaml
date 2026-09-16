@@ -1,3 +1,12 @@
 id: ux-critique
-version: 4
-prompt: SKILL.md
+version: 5
+kind: judgment
+max_turns: 30
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in:
+  ux_prototype: { artifact: ux-prototype.html, optional: true }
+  ux_artifacts: { artifact: ux-artifacts.yaml, optional: true }
+out:
+  ux_artifacts: { artifact: ux-artifacts.yaml }
+  verdict: { type: enum, values: [pass, needs_work, skipped] }

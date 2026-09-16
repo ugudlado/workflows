@@ -1,3 +1,9 @@
 id: workflow-report
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [fs.read, fs.list]
+side_effects: []
+in: {}
+out:
+  report: { type: object }

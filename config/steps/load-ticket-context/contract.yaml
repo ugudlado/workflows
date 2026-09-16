@@ -1,3 +1,10 @@
 id: load-ticket-context
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [fs.read, fs.write, shell.run]
+side_effects: []
+in: {}
+out:
+  ticket: { artifact: ticket-context.md }
+  ticket_context: { type: string }

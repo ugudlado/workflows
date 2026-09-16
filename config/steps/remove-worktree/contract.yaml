@@ -1,3 +1,9 @@
 id: remove-worktree
-version: 1
+version: 2
+kind: exec
 run: script.sh
+tools: [shell.run, git.worktree]
+side_effects: [write:git]
+in: {}
+out:
+  removed: { type: boolean }
