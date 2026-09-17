@@ -78,14 +78,43 @@ models:
     cache_creation_usd: 3.75
     effective_from: "2025-01-01T00:00:00"
 
-  # Claude Sonnet 5 — standard list price ($3/$15).
-  # (Intro $2/$10 through 2026-08-31 intentionally not used; we track list rate.)
+  # Claude Sonnet 5 — per claude-api skill's Current Models table: $2/$10.
   - model_id: claude-sonnet-5
-    input_usd: 3.0
-    output_usd: 15.0
-    cache_read_usd: 0.3
-    cache_creation_usd: 3.75
+    input_usd: 2.0
+    output_usd: 10.0
+    cache_read_usd: 0.2
+    cache_creation_usd: 2.5
     effective_from: "2026-06-09T00:00:00"
+
+  # Fable/Mythos 5.1 and 5 — $10/$50 per MTok (claude-api skill Current Models
+  # table). cache_creation_usd is deliberately OMITTED: the skill states
+  # cache-read rates for this family but never states a cache-write rate.
+  # cache_creation_usd is optional in the engine's pricing schema — a step
+  # billing cache-write tokens against one of these ids records no cost and
+  # is marked cost_partial rather than guessing. Add the rate once confirmed.
+  - model_id: claude-fable-5-1
+    input_usd: 10.0
+    output_usd: 50.0
+    cache_read_usd: 0.25
+    effective_from: "2026-01-01T00:00:00"
+
+  - model_id: claude-mythos-5-1
+    input_usd: 10.0
+    output_usd: 50.0
+    cache_read_usd: 0.25
+    effective_from: "2026-01-01T00:00:00"
+
+  - model_id: claude-fable-5
+    input_usd: 10.0
+    output_usd: 50.0
+    cache_read_usd: 1.0
+    effective_from: "2026-01-01T00:00:00"
+
+  - model_id: claude-mythos-5
+    input_usd: 10.0
+    output_usd: 50.0
+    cache_read_usd: 1.0
+    effective_from: "2026-01-01T00:00:00"
 
   - model_id: coder
     input_usd: 0.0

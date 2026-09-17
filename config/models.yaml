@@ -25,9 +25,12 @@
 # test_every_routed_tier_has_a_price fails the build otherwise, because an
 # unpriced model records no cost at all rather than a wrong one.
 
+# Named tiers (fable/opus/sonnet) exist so step_models can name a model
+# directly, alongside the semantic aliases (strong/standard/fast/code) that
+# describe a step's role. Both point at real pricing.yaml-backed model ids.
 models:
   strong:
-    - { model_id: claude-opus-5, tool: claude }
+    - { model_id: claude-fable-5-1, tool: claude }
 
   standard:
     - { model_id: claude-sonnet-5, tool: claude }
@@ -37,10 +40,19 @@ models:
 
   code:
     - { model_id: composer-2.5, tool: cursor }
-    - { model_id: claude-sonnet-5, tool: claude }
+    - { model_id: claude-opus-5, tool: claude }
     # `codex` is deliberately not a rung here. Adding one without first
     # adding its pricing.yaml row would silently record $0 for every codex
     # step. Price it first, then add the rung.
+
+  fable:
+    - { model_id: claude-fable-5-1, tool: claude }
+
+  opus:
+    - { model_id: claude-opus-5, tool: claude }
+
+  sonnet:
+    - { model_id: claude-sonnet-5, tool: claude }
 
 step_models:
   design: strong

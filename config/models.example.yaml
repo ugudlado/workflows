@@ -6,7 +6,7 @@
 
 models:
   strong:
-    - { model_id: claude-opus-5, tool: claude }
+    - { model_id: claude-fable-5-1, tool: claude }
 
   standard:
     - { model_id: claude-sonnet-5, tool: claude }
@@ -18,6 +18,17 @@ models:
   # wins, so a host without cursor-agent falls through to claude.
   code:
     - { model_id: composer-2.5, tool: cursor }
+    - { model_id: claude-opus-5, tool: claude }
+
+  # Named tiers, for step_models entries that want to name a model directly
+  # rather than a semantic alias.
+  fable:
+    - { model_id: claude-fable-5-1, tool: claude }
+
+  opus:
+    - { model_id: claude-opus-5, tool: claude }
+
+  sonnet:
     - { model_id: claude-sonnet-5, tool: claude }
 
 step_models:
