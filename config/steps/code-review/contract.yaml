@@ -1,5 +1,5 @@
 id: code-review
-version: 6
+version: 7
 kind: judgment
 prompt: SKILL.md
 max_turns: 60
@@ -12,4 +12,4 @@ in:
 out:
   code_review: { artifact: code-review.md }
   tasks: { artifact: tasks.yaml }
-  verdict: { type: enum, values: [pass, needs_work, incomplete_phase] }
+  verdict: { type: enum, values: [pass, needs_work, incomplete_phase], fail_on: [needs_work, incomplete_phase] }

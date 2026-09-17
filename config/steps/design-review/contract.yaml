@@ -1,5 +1,5 @@
 id: design-review
-version: 2
+version: 3
 kind: judgment
 prompt: SKILL.md
 max_turns: 25
@@ -10,4 +10,4 @@ in:
   tasks: { artifact: tasks.yaml }
 out:
   design: { artifact: design.md }
-  verdict: { type: enum, values: [pass, needs_work] }
+  verdict: { type: enum, values: [pass, needs_work], fail_on: [needs_work] }

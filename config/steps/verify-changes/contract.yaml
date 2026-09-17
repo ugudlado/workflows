@@ -1,5 +1,5 @@
 id: verify-changes
-version: 2
+version: 3
 kind: judgment
 prompt: SKILL.md
 max_turns: 40
@@ -11,4 +11,4 @@ in:
   ticket: { artifact: ticket-context.md, optional: true }
 out:
   verification: { artifact: verify-changes.md }
-  verdict: { type: enum, values: [pass, needs_work] }
+  verdict: { type: enum, values: [pass, needs_work], fail_on: [needs_work] }

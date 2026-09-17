@@ -1,5 +1,5 @@
 id: ux-critique
-version: 5
+version: 6
 kind: judgment
 prompt: SKILL.md
 max_turns: 30
@@ -10,4 +10,4 @@ in:
   ux_artifacts: { artifact: ux-artifacts.yaml, optional: true }
 out:
   ux_artifacts: { artifact: ux-artifacts.yaml }
-  verdict: { type: enum, values: [pass, needs_work, skipped] }
+  verdict: { type: enum, values: [pass, needs_work, skipped], fail_on: [needs_work] }

@@ -1,5 +1,5 @@
 id: human-review
-version: 2
+version: 3
 kind: judgment
 prompt: SKILL.md
 max_turns: 20
@@ -10,4 +10,4 @@ in:
   tasks: { artifact: tasks.yaml, optional: true }
 out:
   tasks: { artifact: tasks.yaml, optional: true }
-  decision: { type: enum, values: [approved, rework, await_input] }
+  decision: { type: enum, values: [approved, rework, await_input], fail_on: [rework] }

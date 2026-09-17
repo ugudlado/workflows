@@ -17,7 +17,8 @@ steps:
   # Signoff before anything writes outside the run. Engine side is Phase 3.1.
   - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
   - ticket-start # ticket -> In Progress (implement entry)
-  - ux-critique
+  - id: ux-critique
+    on_failure: ux-design
   - id: implement
     on_failure: design
     requires: impl_token
