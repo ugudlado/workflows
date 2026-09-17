@@ -14,10 +14,7 @@ models:
   fast:
     - { model_id: claude-haiku-4-5, tool: claude }
 
-  # A list is a fallback chain: the first candidate whose `tool` is on PATH
-  # wins, so a host without cursor-agent falls through to claude.
   code:
-    - { model_id: composer-2.5, tool: cursor }
     - { model_id: claude-opus-5, tool: claude }
 
   # Named tiers, for step_models entries that want to name a model directly

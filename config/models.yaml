@@ -3,18 +3,16 @@
 # The engine reads exactly two blocks from this file (model_routes.py):
 #
 #   models:       tier alias -> route. A route is either a scalar
-#                 {model_id, tool} or a LIST, which is a PATH-gated fallback
-#                 chain: the first candidate whose `tool` resolves as a
-#                 command on PATH wins. A scalar is never PATH-gated — it
-#                 dispatches as written and fails at invoke if absent.
+#                 {model_id, tool} or a LIST (an ordered preference list) —
+#                 the first entry always wins; there is no PATH gating.
 #   step_models:  step_id -> tier alias. This is where a step's model lives;
 #                 a contract that declares `model:` is rejected (protocol v2
 #                 principle 7).
 #
-# A chain gates on the TOOL NAME itself — `tool: claude` asks whether
-# `claude` is on PATH. There is no longer a `tools:` block mapping a tool to
-# a binary and an argv template: the engine stopped spawning vendor CLIs, so
-# transports, args_template, and acp_args are all dead keys and were removed.
+# There is no `tools:` block mapping a tool to a binary and an argv template:
+# the engine stopped spawning vendor CLIs, so transports, args_template, and
+# acp_args are all dead keys and were removed. `tool:` on an entry is
+# documentation only.
 #
 # Precedence across files (highest wins): --models-config /
 # ORCHESTRATOR_MODELS_CONFIG > this file > ~/.orchestrator/models.yaml >
@@ -39,7 +37,6 @@ models:
     - { model_id: claude-haiku-4-5, tool: claude }
 
   code:
-    - { model_id: composer-2.5, tool: cursor }
     - { model_id: claude-opus-5, tool: claude }
     # `codex` is deliberately not a rung here. Adding one without first
     # adding its pricing.yaml row would silently record $0 for every codex
