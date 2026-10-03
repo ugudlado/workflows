@@ -5,3 +5,6 @@ __pycache__/
 
 # GEPA / prompt-optimizer run artifacts (live under steps/*/runs/)
 **/runs/
+.agents/skills/
+.claude/settings.local.json
+.claude/skills/find-skills
