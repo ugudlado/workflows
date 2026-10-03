@@ -8,3 +8,12 @@ __pycache__/
 .agents/skills/
 .claude/settings.local.json
 .claude/skills/find-skills
+.claude/skills/explorer
+.claude/skills/designer
+.claude/skills/developer
+.claude/skills/code-reviewer
+.claude/skills/design-reviewer
+.claude/skills/scratchpad
+.claude/skills/commit-group
+.claude/skills/orchestrate
+.claude/skills/workflow-creator
