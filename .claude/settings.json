@@ -18,5 +18,15 @@
         "repo": "DietrichGebert/ponytail"
       }
     }
+  },
+  "skillOverrides": {
+    "simplify": "off",
+    "dataviz": "name-only",
+    "claude-api": "name-only",
+    "schedule": "name-only",
+    "loop": "name-only",
+    "keybindings-help": "name-only",
+    "fewer-permission-prompts": "name-only",
+    "plugin-authoring": "name-only"
   }
 }
