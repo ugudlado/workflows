@@ -10,7 +10,7 @@ user-invocable: true
 deterministic options (approve / send back to a specific step); the engine
 matches a label or option number and routes without re-dispatching this
 step. Only genuinely freeform text (no option match) reaches you to
-interpret — see the escape-hatch instruction below.
+interpret — see step 3.
 
 ## Context
 
@@ -31,13 +31,13 @@ Only emit a step id that exists on this workflow:
    and `{out.tasks}`. Note what passed and what is still open.
 
 2. **First ask (no User direction yet)** — Report `decision: await_input` with
-   an `ask` and an options list. Always include `approve` and at least the
+   an `ask` and an options list. Reporting `await_input` stops the run; the
+   driver relays `ask` to the user and re-runs you with their answer as User
+   direction. Always include `approve` and at least the
    `implement` rework option; add `design`/`explore`/`ux-design` options only
    when there's a specific known concern for that layer.
 
-3. **Escape hatch — User direction present but didn't match an offered
-   option** (the engine already tried; you're only reached because nothing
-   matched). Interpret it:
+3. **User direction present (from the driver's brief)** — interpret it:
    - Clearly approval-shaped (ship / approve / LGTM / merge / "looks good") →
      report `decision: approved`.
    - Describes concrete rework → update `{out.tasks}` (add/reopen tasks with
@@ -53,6 +53,3 @@ Only emit a step id that exists on this workflow:
 - Always set `reset_to` on a `rework` decision (otherwise the workflow falls
   back to the static `on_failure: implement` edge).
 - Never `reset_to` a step after `human-review` in the DAG.
-- The escape-hatch instructions only apply when the engine did NOT already
-  match User direction to an offered option — that match short-circuits this
-  step entirely (advance or reset applied directly, no re-dispatch).
