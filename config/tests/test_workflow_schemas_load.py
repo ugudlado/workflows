@@ -218,3 +218,20 @@ def test_post_merge_side_effect_steps_require_merge_token(schema_name):
         if contract.side_effects:
             requires = entry.get("requires") if isinstance(entry, dict) else None
             assert requires == "merge_token", f"{schema_name}/{step_id}"
+
+
+def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    ask = next_step("research", config_root=_REAL_HOME, slug="r1", after="intake-research",
+                    status="completed",
+                    out={"intake_status": "await_input", "ask": "Audience?"})
+    assert ask["status"] == "needs_you"
+    assert ask["step_id"] == "intake-research"
+    assert ask["await_input"]["ask"] == "Audience?"
+
+    intake = tmp_path / "spec" / "changes" / "r1" / "intake.json"
+    intake.parent.mkdir(parents=True)
+    intake.write_text("{}")
+    done = next_step("research", config_root=_REAL_HOME, slug="r1", after="intake-research",
+                     status="completed", out={"intake_status": "complete"})
+    assert done["step_id"] == "synthesize-findings"

@@ -12,12 +12,11 @@ inputs:
 # Identity: change_id / slug / ticket_id = session_id.
 # Artifacts: the workflow owns placement — see intake-research/SKILL.md
 #
-# intake-research is an agent step: emits status await_input until checklist
-# (topic, audience, depth) is full; then synthesize-findings / workflow-report.
+# intake-research asks via `intake_status: await_input` until topic/audience/depth
+# are filled; then synthesize-findings / workflow-report.
 #
 # Web search is NOT a fixed Tavily script — synthesize-findings uses whichever
 # search/browse tools the routed agent already has (cursor-agent, etc.).
-mode: session
 steps:
   - intake-research
   - synthesize-findings

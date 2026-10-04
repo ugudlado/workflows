@@ -39,11 +39,11 @@ Optional (fill if the user volunteers; do not block on them): `constraints`, `ou
 3. **Score completeness** — A field is present when it has a non-empty concrete
    value (not "TBD" / "unknown").
 4. **If anything required is missing** — Update `intake.json` with what you have,
-   then return `await_input` (same step stays next). Ask for **one** missing
-   field at a time. Put the question in `outputs.ask` and the missing keys in
-   `outputs.missing`.
-5. **If checklist is full** — Write `intake.json` and `topic.md`, then return
-   `completed`. Downstream `synthesize-findings` reads these files.
+   then report `intake_status: await_input` with an `ask` (the run stops; the
+   driver relays it and re-runs this step with the answer). Ask for **one**
+   missing field at a time.
+5. **If checklist is full** — Write `intake.json` and `topic.md`, then report
+   `intake_status: complete`. Downstream `synthesize-findings` reads these files.
 
 ### `intake.json` shape
 
@@ -70,9 +70,10 @@ Optional (fill if the user volunteers; do not block on them): `constraints`, `ou
 
 ## Reporting
 
-Report `complete: false` while the checklist is still missing `topic`,
-`audience`, or `depth` — include the `ask` for the next missing field. Report
-`complete: true` once all three are filled and `{out.topic}` is written.
+Report `intake_status: await_input` while the checklist is still missing
+`topic`, `audience`, or `depth` — include the `ask` for the next missing
+field (one at a time). Report `intake_status: complete` once all three are
+filled and `{out.topic}` is written.
 
 ## Rules
 

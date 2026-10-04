@@ -9,4 +9,4 @@ in: {}
 out:
   intake: { artifact: intake.json }
   topic: { artifact: topic.md, optional: true }
-  complete: { type: boolean }
+  intake_status: { type: enum, values: [complete, await_input] }
