@@ -27,5 +27,6 @@ steps:
     requires: merge_token
   - id: remove-worktree
     requires: merge_token
-  - ticket-done
+  - id: ticket-done
+    requires: merge_token
   - workflow-report
