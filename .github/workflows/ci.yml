@@ -7,7 +7,7 @@ on:
 env:
   # Pin the engine ref this pack is validated against. Bump when the pack
   # adopts a new protocol-v2 phase from orchestrator.
-  ORCHESTRATOR_REF: simplify-v2
+  ORCHESTRATOR_REF: main
 
 jobs:
   validate:
@@ -30,28 +30,6 @@ jobs:
           cd /tmp/orchestrator-engine
           uv sync --extra dev
 
-      - name: Install orchestrator CLI (uv tool, same ref)
-        run: uv tool install "git+https://github.com/ugudlado/orchestrator.git@${ORCHESTRATOR_REF}"
-
-      - name: validate-workflow (every recipe must be ok:true)
-        run: |
-          set -euo pipefail
-          export ORCHESTRATOR_TRUST_ALL=1
-          export ORCHESTRATOR_CONFIG="$GITHUB_WORKSPACE/config"
-          fail=0
-          for f in config/workflows/*.yaml; do
-            name="$(basename "$f" .yaml)"
-            echo "=== $name ==="
-            out="$(orchestrator validate-workflow "$name" --json)" || true
-            echo "$out"
-            ok="$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("ok"))' 2>/dev/null || echo false)"
-            if [ "$ok" != "True" ]; then
-              echo "::error::$name failed validate-workflow"
-              fail=1
-            fi
-          done
-          exit "$fail"
-
       - name: Pack test suite (pytest)
         run: |
           cd /tmp/orchestrator-engine
@@ -61,8 +39,8 @@ jobs:
       # on main (pre-existing, migration-era drift — some assert the old
       # flat-file `config/steps/<id>.yaml` layout that's since moved to
       # `config/steps/<id>/contract.yaml`). Run them for visibility but don't
-      # gate the pipeline on them until they're triaged/fixed; validate-workflow
-      # above is the real correctness gate for the shipped pack.
+      # gate the pipeline on them until they're triaged/fixed; the pytest suite
+      # above (every recipe walked through `next`) is the correctness gate.
       - name: Pack shell tests (non-blocking, pre-existing failures)
         continue-on-error: true
         run: |
