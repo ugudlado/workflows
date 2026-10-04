@@ -12,11 +12,11 @@ import yaml
 # Repo root is 4 levels above this file:
 # tests/ -> orchestrator_next/ -> scripts/ -> config/ -> <repo_root>
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+_CONFIG_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
 
 
 def _read(rel_path: str) -> str:
-    full = os.path.join(_REPO_ROOT, rel_path)
+    full = os.path.join(_CONFIG_ROOT, rel_path)
     with open(full, "r", encoding="utf-8") as f:
         return f.read()
 
@@ -32,67 +32,38 @@ def _read(rel_path: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def test_fr5_skill_shell_driver():
-    """skills/archive/orchestrate/SKILL.md must delegate to the CLI, not in-chat dispatch."""
-    content = _read("skills/archive/orchestrate/SKILL.md")
-
-    assert "orchestrator run" in content, (
-        "skills/archive/orchestrate/SKILL.md must shell out via 'orchestrator run'."
-    )
-
-    # The dispatch loop runs in-process in the CLI (run_loop.py), not the old
-    # shell driver. The skill must reference the in-process loop, not run-workflow.sh.
-    assert "run_loop" in content or "in-process" in content, (
-        "skills/archive/orchestrate/SKILL.md must reference the in-process dispatch loop."
-    )
-
-    assert "run_in_background: true" not in content, (
-        "skills/archive/orchestrate/SKILL.md still documents in-chat Task-tool spawn semantics."
-    )
+def test_driver_uses_native_artifact_handoff():
+    """The pack-owned driver binding passes explicit input and payload env."""
+    content = _read("DRIVER.md")
+    assert "payload.run_path" in content
+    assert '["--proposed-scenarios", payload.in.proposed_scenarios]' in content
+    assert "payload.env" in content and "cwd = `WORKTREE_PATH`" in content
+    assert "absence is a no-op" in content
 
 
-# ---------------------------------------------------------------------------
-# FR-6: skill-steps complete via COMPLETION / orchestrator done
-# ---------------------------------------------------------------------------
-
-def test_fr6_skill_steps_use_orchestrator_done():
-    """Skill charters must document COMPLETION / orchestrator done as the
-    completion protocol (replaces the removed skills/developer agent).
-    """
-    for skill_file in (
-        "skills/architect/SKILL.md",
-        "skills/developer/SKILL.md",
-        "skills/ux-designer/SKILL.md",
+def test_role_adapters_bind_installed_results_to_contract_outputs():
+    """Current adapters consume installed roles and bind named artifact outs."""
+    for step, role, result in (
+        ("design", "designer", "design"),
+        ("implement", "developer", "implementation"),
+        ("ux-design", "ux-designer", "ux_design"),
     ):
-        content = _read(skill_file)
-        assert "orchestrator done" in content or "COMPLETION:" in content, (
-            f"{skill_file} must document COMPLETION / orchestrator done "
-            "(skill-step completion protocol)."
-        )
+        content = _read(f"steps/{step}/SKILL.md")
+        assert f"installed `{role}` skill" in content
+        assert f"`{result}`" in content and "completion protocol" in " ".join(content.split())
+        contract = yaml.safe_load(_read(f"steps/{step}/contract.yaml"))
+        assert contract["prompt"] == "SKILL.md"
+        for name, spec in contract["out"].items():
+            if spec.get("artifact"):
+                assert f"{{out.{name}}}" in content
 
 
-# ---------------------------------------------------------------------------
-# FR-9: SKILL.md has no in-chat dispatch loop (shell-out model)
-# ---------------------------------------------------------------------------
-
-def test_fr9_skill_no_chat_driver_dispatch():
-    """skills/archive/orchestrate/SKILL.md must not document the removed chat-driver loop."""
-    content = _read("skills/archive/orchestrate/SKILL.md")
-
-    assert "### 3. Dispatch loop" not in content, (
-        "skills/archive/orchestrate/SKILL.md still has the in-chat dispatch-loop section."
-    )
-    assert "exit_code, stdout = orchestrator next" not in content, (
-        "skills/archive/orchestrate/SKILL.md still documents the in-chat orchestrator next loop."
-    )
-
-    assert "USAGE CAPTURE" not in content, (
-        "skills/archive/orchestrate/SKILL.md still contains 'USAGE CAPTURE'."
-    )
-
-    assert "MANDATORY: AGENT IDENTITY" not in content, (
-        "skills/archive/orchestrate/SKILL.md still contains driver agentId extraction prose."
-    )
+def test_driver_has_no_legacy_chat_dispatch_protocol():
+    content = _read("DRIVER.md")
+    for removed in ("### 3. Dispatch loop", "exit_code, stdout = orchestrator next",
+                    "USAGE CAPTURE", "MANDATORY: AGENT IDENTITY", "run_in_background: true"):
+        assert removed not in content
+    assert "explicit argument is authoritative" in content
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +72,7 @@ def test_fr9_skill_no_chat_driver_dispatch():
 
 def test_fr10_workflow_report_path():
     """config/steps/workflow-report/contract.yaml run: must point to the step script."""
-    content = _read("config/steps/workflow-report/contract.yaml")
+    content = _read("steps/workflow-report/contract.yaml")
 
     assert "run: script.sh" in content, (
         "config/steps/workflow-report/contract.yaml run: must be 'script.sh' (directory form)."
@@ -145,8 +116,8 @@ _INLINE_RUNTIME_PRODUCERS = {
 
 def _contract_path(step_id: str) -> str | None:
     """Return the path to a step's contract file (directory form preferred over flat form)."""
-    dir_form = os.path.join(_REPO_ROOT, "config", "steps", step_id, "contract.yaml")
-    flat_form = os.path.join(_REPO_ROOT, "config", "steps", f"{step_id}.yaml")
+    dir_form = os.path.join(_CONFIG_ROOT, "steps", step_id, "contract.yaml")
+    flat_form = os.path.join(_CONFIG_ROOT, "steps", f"{step_id}.yaml")
     if os.path.isfile(dir_form):
         return dir_form
     if os.path.isfile(flat_form):
@@ -200,8 +171,8 @@ def test_no_contract_declares_phase_context_bundle():
     offenders = []
     # Check both flat-file contracts (e.g. select-workflow.yaml) and directory-form
     # contracts (<id>/contract.yaml).
-    candidates = sorted(glob.glob(os.path.join(_REPO_ROOT, "config", "steps", "*.yaml")))
-    candidates += sorted(glob.glob(os.path.join(_REPO_ROOT, "config", "steps", "*", "contract.yaml")))
+    candidates = sorted(glob.glob(os.path.join(_CONFIG_ROOT, "steps", "*.yaml")))
+    candidates += sorted(glob.glob(os.path.join(_CONFIG_ROOT, "steps", "*", "contract.yaml")))
     for path in candidates:
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
@@ -209,7 +180,7 @@ def test_no_contract_declares_phase_context_bundle():
             continue
         for item in (data.get("inputs") or []):
             if isinstance(item, str) and item == "phase_context_bundle":
-                offenders.append(os.path.relpath(path, os.path.join(_REPO_ROOT, "config", "steps")))
+                offenders.append(os.path.relpath(path, os.path.join(_CONFIG_ROOT, "steps")))
     assert not offenders, (
         f"phase_context_bundle still declared in: {offenders}"
     )

@@ -1,7 +1,7 @@
 """Validate, append, and commit the eval scenarios learn proposed this run.
 
 learn is an LLM step, so it stages candidate rows in
-``<state dir>/proposed-scenarios.jsonl`` instead of editing prompt packs
+the contract's ``proposed_scenarios`` artifact instead of editing prompt packs
 directly. This step is the deterministic gate between that staging file and
 each pack's ``scenarios/train.jsonl``.
 
@@ -13,9 +13,10 @@ one line of JSON per row, keys exactly {id, scenario, expect}, ids unique
 across train/dev/holdout.
 
 Rows that fail are dropped with a recorded reason; the step always exits 0.
-Learning is best-effort and must never fail the workflow (a nonzero exit from a
-script step aborts the run — see run_loop.run_script_step).
+Learning is best-effort and must never fail the workflow.
 
+The driver passes --proposed-scenarios with the contract-resolved input path.
+Legacy env discovery is used only when that argument is absent.
 Env read (beyond the standard ORCHESTRATOR_* block):
   ORCHESTRATOR_STATE_YAML_PATH   staging file lives beside state.yaml
   ORCHESTRATOR_PROMPT_DIRS       JSON step_id -> prompt dir (the append target)
@@ -23,6 +24,7 @@ Env read (beyond the standard ORCHESTRATOR_* block):
 """
 from __future__ import annotations
 
+import argparse
 import fcntl
 import json
 import os
@@ -63,15 +65,14 @@ def _emit(
 # Staging file discovery
 # ---------------------------------------------------------------------------
 
-def staging_files() -> list[Path]:
-    """Staging files to consume, in read order.
+def staging_files(proposed_scenarios: Path | None = None) -> list[Path]:
+    """Consume the driver's explicit input, or discover legacy staging files.
 
-    The state dir (parent of state.yaml) is the canonical location and is
-    always set. ORCHESTRATOR_WORKFLOW_DIR is also checked because it is the
-    variable step prompts historically name — but it is empty on non-worktree
-    runs (parser.load_state derives it from worktree_path), so it cannot be the
-    primary.
+    An absent optional explicit artifact is a no-op, never a fallback to
+    another run's state directory. Relative paths resolve against driver cwd.
     """
+    if proposed_scenarios is not None:
+        return [proposed_scenarios] if proposed_scenarios.is_file() else []
     found: list[Path] = []
     state_path = (
         os.environ.get("ORCHESTRATOR_STATE_YAML_PATH")
@@ -164,6 +165,55 @@ def validate_scenario(scenario: dict[str, Any]) -> None:
         raise RowError("expect must be a non-empty list of non-empty strings")
 
 
+def validate_provenance(raw: dict[str, Any]) -> None:
+    """Check optional evidence assertions, not the truth of their references."""
+    if "provenance" not in raw:
+        return  # Legacy proposals remain compatible.
+    proof = raw["provenance"]
+    if not isinstance(raw.get("row"), dict) or not isinstance(proof, dict):
+        raise RowError("provenance requires a canonical row wrapper and an object")
+    if proof.get("source_kind") not in ("agentmemory", "run_history"):
+        raise RowError("provenance source_kind must be agentmemory or run_history")
+    if proof.get("split_origin") not in ("agentmemory", "run_history", "train"):
+        raise RowError("provenance split_origin must not be dev, holdout or unknown")
+    required = ["observed_outcome", "applicability"]
+    if proof["source_kind"] == "agentmemory":
+        required.append("lesson_id")
+    for key in required:
+        if not isinstance(proof.get(key), str) or not proof[key].strip():
+            raise RowError(f"provenance {key} must be a non-empty string")
+    verification = proof.get("verification")
+    if (
+        not isinstance(verification, dict)
+        or not isinstance(verification.get("reference"), str)
+        or not verification["reference"].strip()
+        or verification.get("result") != "passed"
+    ):
+        raise RowError("provenance verification requires a reference and result passed")
+
+
+def scenario_content(scenario: dict[str, Any]) -> str:
+    """Exact normalized situation match; not semantic paraphrase detection."""
+    return " ".join(scenario["scenario"].split()).casefold()
+
+
+def existing_content(pack: Path) -> set[str]:
+    """Inspect reserved splits only inside this gate, never in generation."""
+    content: set[str] = set()
+    for split in SPLITS:
+        path = pack / "scenarios" / f"{split}.jsonl"
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                scenario = parse_line(line)
+                validate_scenario(scenario)
+            except RowError:
+                continue
+            content.add(scenario_content(scenario))
+    return content
+
+
 def existing_ids(pack: Path) -> set[str]:
     """Scenario ids already present in the pack's train/dev/holdout banks.
 
@@ -215,28 +265,33 @@ def prompt_roots() -> list[Path]:
     return [Path(p) for p in raw.split(os.pathsep) if p]
 
 
-def _variants(path: Path) -> set[Path]:
-    """A path in both literal-absolute and symlink-resolved form."""
-    forms = {Path(os.path.abspath(path))}
-    try:
-        forms.add(path.resolve())
-    except OSError:
-        pass
-    return forms
-
-
 def is_confined(path: Path, roots: list[Path]) -> bool:
-    """True when path sits under one of the allowed prompt roots.
+    """Compare canonical paths; explicitly configured root aliases are trusted.
 
-    Compared in both literal and resolved form: skill dirs are commonly
-    symlinks into another checkout, so resolving only one side of the
-    comparison would reject a legitimate pack.
+    Child symlinks must still resolve inside an allowed root. This is static
+    confinement, not protection against concurrent hostile symlink replacement.
     """
+    candidate, missing = path, []
+    try:
+        while True:
+            try:
+                resolved = candidate.resolve(strict=True).joinpath(*reversed(missing))
+                break
+            except FileNotFoundError:
+                # Only absent ordinary components may be created; strict
+                # resolution must not mask errors or dangling child links.
+                if candidate.is_symlink():
+                    return False
+                missing.append(candidate.name)
+                candidate = candidate.parent
+    except (OSError, RuntimeError):
+        return False
     for root in roots:
-        for root_form in _variants(root):
-            for path_form in _variants(path):
-                if path_form == root_form or root_form in path_form.parents:
-                    return True
+        try:
+            if resolved.is_relative_to(root.resolve(strict=True)):
+                return True
+        except (OSError, RuntimeError):
+            continue
     return False
 
 
@@ -339,6 +394,7 @@ def _accept_rows(
     accepted: dict[Path, list[dict[str, Any]]] = {}
     skipped: list[dict[str, Any]] = []
     known_ids: dict[Path, set[str]] = {}
+    known_content: dict[Path, set[str]] = {}
 
     for source in sources:
         try:
@@ -383,6 +439,9 @@ def _accept_rows(
             scenario = scenario_of(raw)
             try:
                 validate_scenario(scenario)
+                if not 3 <= len(scenario["expect"]) <= 4:
+                    raise RowError("new proposals require 3-4 observable expectations")
+                validate_provenance(raw)
             except RowError as exc:
                 skipped.append({**where, "reason": str(exc)})
                 continue
@@ -396,7 +455,16 @@ def _accept_rows(
                     "reason": f"duplicate scenario id {scenario_id!r}",
                 })
                 continue
+            content = known_content.setdefault(pack, existing_content(pack))
+            signature = scenario_content(scenario)
+            if signature in content:
+                skipped.append({
+                    **where, "id": scenario_id,
+                    "reason": "duplicate scenario content in train/dev/holdout or proposals",
+                })
+                continue
             seen.add(scenario_id)
+            content.add(signature)
             accepted.setdefault(pack, []).append(scenario)
 
     return accepted, skipped
@@ -405,6 +473,7 @@ def _accept_rows(
 def _persist(
     accepted: dict[Path, list[dict[str, Any]]],
     skipped: list[dict[str, Any]],
+    roots: list[Path],
 ) -> tuple[list[dict[str, Any]], dict[Path | None, list[Path]]]:
     """Append accepted scenarios, refusing targets that are already dirty."""
     persisted: list[dict[str, Any]] = []
@@ -422,8 +491,12 @@ def _persist(
                 })
             continue
         try:
+            # Recheck the actual write boundary, not just the accepted pack.
+            # A train-file link could redirect into dev/holdout even in-root.
+            if target.is_symlink() or not is_confined(target, roots):
+                raise RowError(f"unsafe append target (symlink or outside allowed roots): {target}")
             append_rows(target, scenarios)
-        except OSError as exc:
+        except (OSError, RowError) as exc:
             for scenario in scenarios:
                 skipped.append({"id": scenario["id"], "reason": f"append failed: {exc}"})
             continue
@@ -437,15 +510,16 @@ def _persist(
     return persisted, by_repo
 
 
-def run() -> int:
-    sources = staging_files()
+def run(proposed_scenarios: Path | None = None) -> int:
+    sources = staging_files(proposed_scenarios)
     if not sources:
         _log("no proposed-scenarios.jsonl staged — nothing to persist")
         _emit("no proposed scenarios staged")
         return 0
 
-    accepted, skipped = _accept_rows(sources, prompt_dirs(), prompt_roots())
-    persisted, by_repo = _persist(accepted, skipped)
+    roots = prompt_roots()
+    accepted, skipped = _accept_rows(sources, prompt_dirs(), roots)
+    persisted, by_repo = _persist(accepted, skipped, roots)
 
     change_id = (
         os.environ.get("ORCHESTRATOR_CHANGE_ID")
@@ -485,8 +559,11 @@ def run() -> int:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--proposed-scenarios", type=Path)
+    args = parser.parse_args()
     try:
-        return run()
+        return run(args.proposed_scenarios)
     except Exception as exc:  # noqa: BLE001 — learning must never fail the run
         _log(f"WARN unexpected failure, persisting nothing: {exc}")
         _emit(f"persist skipped after unexpected failure: {exc}")
