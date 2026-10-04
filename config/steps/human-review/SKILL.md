@@ -7,10 +7,9 @@ user-invocable: true
 # Human Review
 
 **Intent:** Pause for a human after automated `code-review` passes. Offer
-deterministic options (approve / send back to a specific step); the engine
-matches a label or option number and routes without re-dispatching this
-step. Only genuinely freeform text (no option match) reaches you to
-interpret — see step 3.
+deterministic options (approve / send back to a specific step). Every human
+reply returns to you as User direction on a re-run of this step; you interpret
+it — see step 3.
 
 ## Context
 
@@ -38,6 +37,9 @@ Only emit a step id that exists on this workflow:
    when there's a specific known concern for that layer.
 
 3. **User direction present (from the driver's brief)** — interpret it:
+   - Exactly an offered option label or number (e.g. "implement", "2") →
+     apply that option directly (approve, or rework with that `reset_to`);
+     never re-ask.
    - Clearly approval-shaped (ship / approve / LGTM / merge / "looks good") →
      report `decision: approved`.
    - Describes concrete rework → update `{out.tasks}` (add/reopen tasks with
