@@ -29,6 +29,8 @@ jobs:
             https://github.com/ugudlado/orchestrator.git /tmp/orchestrator-engine
           cd /tmp/orchestrator-engine
           uv sync --extra dev
+          # Step scripts shell out to python3 + yaml; use the engine venv's.
+          echo /tmp/orchestrator-engine/.venv/bin >> "$GITHUB_PATH"
 
       - name: Pack test suite (pytest)
         run: |
