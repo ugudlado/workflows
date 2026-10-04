@@ -1,25 +1,19 @@
 """
-  - prompt steps (prompt:) load non-empty instruction + prompt_dir
+  - prompt steps (prompt:) resolve to a non-empty charter file + prompt_dir
   - shell steps (run:) resolve to an existing script path
 """
 from __future__ import annotations
 
 import os
-import sys
+from pathlib import Path
 
 import pytest
 import yaml
 
 from orchestrator_next.parser import AgentStepContract, ScriptStepContract, load_contract_for_step
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
-_SCRIPTS_DIR = _REPO_ROOT
-if _SCRIPTS_DIR not in sys.path:
-    sys.path.insert(0, _SCRIPTS_DIR)
-
-_STEPS_DIR = os.path.join(_REPO_ROOT, "config", "steps")
-_SKILLS_DIR = os.path.join(_REPO_ROOT, "skills")
+_CONFIG_ROOT = Path(__file__).resolve().parents[1]
+_STEPS_DIR = str(_CONFIG_ROOT / "steps")
 
 
 def _discover_step_dirs() -> list[str]:
@@ -49,12 +43,6 @@ _AGENT_STEP_IDS = [sid for sid in _ALL_STEP_IDS if _step_kind(sid) == "prompt"]
 _SHELL_STEP_IDS = [sid for sid in _ALL_STEP_IDS if _step_kind(sid) == "shell"]
 
 
-@pytest.fixture(autouse=True)
-def point_parser_at_real_steps(monkeypatch):
-    monkeypatch.setenv("ORCHESTRATOR_STEP_CONTRACTS_TEST_OVERRIDE", _STEPS_DIR)
-    monkeypatch.setenv("ORCHESTRATOR_SKILLS_TEST_OVERRIDE", _SKILLS_DIR)
-
-
 @pytest.mark.parametrize("step_id", _ALL_STEP_IDS)
 def test_contract_kind_matches_yaml(step_id: str):
     expected_kind = _step_kind(step_id)
@@ -62,7 +50,7 @@ def test_contract_kind_matches_yaml(step_id: str):
         f"{step_id}/contract.yaml must declare run: | prompt:; got {expected_kind!r}"
     )
 
-    contract = load_contract_for_step(step_id)
+    contract = load_contract_for_step(step_id, _CONFIG_ROOT)
     if expected_kind == "prompt":
         assert isinstance(contract, AgentStepContract), (
             f"{step_id}: expected AgentStepContract, got {type(contract).__name__}"
@@ -74,12 +62,11 @@ def test_contract_kind_matches_yaml(step_id: str):
 
 
 @pytest.mark.parametrize("step_id", _AGENT_STEP_IDS)
-def test_agent_instruction_non_empty(step_id: str):
-    contract = load_contract_for_step(step_id)
+def test_agent_charter_non_empty(step_id: str):
+    contract = load_contract_for_step(step_id, _CONFIG_ROOT)
     assert isinstance(contract, AgentStepContract)
-    assert contract.instruction, (
-        f"{step_id}: contract.instruction is empty"
-    )
+    assert Path(contract.prompt_path).is_file(), f"{step_id}: missing charter"
+    assert Path(contract.prompt_path).read_text().strip(), f"{step_id}: empty charter"
     assert contract.prompt_dir and os.path.isdir(contract.prompt_dir), (
         f"{step_id}: missing prompt_dir {contract.prompt_dir!r}"
     )
@@ -90,7 +77,7 @@ def test_agent_instruction_non_empty(step_id: str):
 
 @pytest.mark.parametrize("step_id", _SHELL_STEP_IDS)
 def test_shell_run_path_exists(step_id: str):
-    contract = load_contract_for_step(step_id)
+    contract = load_contract_for_step(step_id, _CONFIG_ROOT)
     assert isinstance(contract, ScriptStepContract)
     assert contract.run and os.path.isfile(contract.run)
     assert os.access(contract.run, os.R_OK)

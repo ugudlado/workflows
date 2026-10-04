@@ -82,7 +82,7 @@ def test_load_ticket_context_success(tmp_path, monkeypatch):
 
 
 def test_load_ticket_context_unset_env_skips(tmp_path):
-    """No ticketing env at all → step skips cleanly (exit 0), no abort."""
+    """No ticketing env → a ticket id gets a local stub, not a remote fetch."""
     state_dir = tmp_path / "st"
     state_dir.mkdir()
     state_yaml = state_dir / "state.yaml"
@@ -98,7 +98,12 @@ def test_load_ticket_context_unset_env_skips(tmp_path):
         capture_output=True, text=True, cwd=str(tmp_path), env=env,
     )
     assert proc.returncode == 0, proc.stderr
-    assert '"ticket_context": "skipped"' in proc.stdout
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert out["status"] == "completed"
+    assert out["outputs"]["ticket_context"] == "stub"
+    assert out["state_patch"]["ticket_id"] == "ORC-125"
+    body = (tmp_path / "spec/changes/orc-125/ticket-context.md").read_text()
+    assert "Ticketing provider unset" in body
 
 
 def test_load_ticket_context_missing_env_aborts_workflow(tmp_path):
@@ -169,12 +174,13 @@ def test_backlog_api_project_env_id_wins(tmp_path):
     assert _resolve_project({"BACKLOG_PROJECT_ID": "from-env-id"}, repo) == "from-env-id"
 
 
-def test_backlog_api_project_env_name_beats_id(tmp_path):
-    """BACKLOG_PROJECT (name alias) beats BACKLOG_PROJECT_ID."""
+def test_backlog_api_project_env_id_beats_legacy_name(tmp_path):
+    """BACKLOG_PROJECT_ID wins; BACKLOG_PROJECT is only a legacy fallback."""
     repo = _write_project_yaml(tmp_path, "from-config")
     got = _resolve_project(
         {"BACKLOG_PROJECT": "from-env-name", "BACKLOG_PROJECT_ID": "from-env-id"}, repo)
-    assert got == "from-env-name"
+    assert got == "from-env-id"
+    assert _resolve_project({"BACKLOG_PROJECT": "from-env-name"}, repo) == "from-env-name"
 
 
 def test_backlog_api_project_empty_when_no_env_even_with_config(tmp_path):
@@ -214,7 +220,7 @@ def test_correlation_line_carries_full_key():
 def test_correlation_line_omits_absent_parts():
     """Missing coordinates drop out rather than appearing as empty values."""
     got = _correlation_line({"ORCHESTRATOR_STEP_ID": "code-review"})
-    assert got == "correlation: ticket=ORC-125 step=review"
+    assert got == "correlation: ticket=ORC-125 step=code-review"
     assert "change=" not in got
 
 def _run_ticket_sync(tmp_path: Path, env_overrides: dict, *, comment_fails: bool = False) -> tuple:
@@ -230,7 +236,7 @@ def _run_ticket_sync(tmp_path: Path, env_overrides: dict, *, comment_fails: bool
     fake_bin.mkdir(exist_ok=True)
     posted = tmp_path / "posted.txt"
     curl = fake_bin / "curl"
-    # Record the -d payload of any POST to /api/history; the PUT always succeeds
+    # Record the -d payload of any POST to /api/projects/orc/tasks/ORC-125/comments; the PUT always succeeds
     # so comment_fails isolates the comment half.
     history_action = (
         "exit 22" if comment_fails
@@ -242,7 +248,7 @@ def _run_ticket_sync(tmp_path: Path, env_overrides: dict, *, comment_fails: bool
         "for i in \"${!args[@]}\"; do\n"
         "  if [ \"${args[$i]}\" = '-d' ]; then payload=\"${args[$((i+1))]}\"; fi\n"
         "done\n"
-        f"case \"${{args[*]}}\" in *'/api/history'*) {history_action} ;; esac\n"
+        f"case \"${{args[*]}}\" in *'/api/projects/orc/tasks/ORC-125/comments'*) {history_action} ;; esac\n"
         "echo '{}'\n"
     )
     curl.chmod(0o755)
@@ -274,7 +280,7 @@ def test_ticket_sync_comment_carries_correlation_key(tmp_path):
     })
     assert proc.returncode == 0, proc.stderr
     assert len(bodies) == 1, bodies
-    assert bodies[0]["taskId"] == "ORC-125"
+    assert set(bodies[0]) == {"body"}  # Task identity is in the nested request URL.
     assert "correlation: ticket=ORC-125 change=orc-125 step=implement" in bodies[0]["body"]
     assert "status set to In Progress" in bodies[0]["body"]
 
@@ -357,7 +363,7 @@ def _run_ticket_done(tmp_path: Path, current_status: str) -> tuple:
         "for i in \"${!args[@]}\"; do\n"
         "  if [ \"${args[$i]}\" = '-d' ]; then payload=\"${args[$((i+1))]}\"; fi\n"
         "done\n"
-        f"case \"${{args[*]}}\" in *'/api/history'*) printf '%s\\n' \"$payload\" >> '{posted}'; echo '{{}}'; exit 0 ;; esac\n"
+        f"case \"${{args[*]}}\" in *'/api/projects/orc/tasks/ORC-125/comments'*) printf '%s\\n' \"$payload\" >> '{posted}'; echo '{{}}'; exit 0 ;; esac\n"
         f"printf '%s' '{task_json}'\n"
     )
     curl.chmod(0o755)

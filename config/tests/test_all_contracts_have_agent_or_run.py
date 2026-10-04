@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import glob
 import os
+from pathlib import Path
 from typing import Set
 
 import yaml
@@ -30,9 +31,7 @@ def _collect_workflow_steps() -> Set[str]:
         if not data:
             continue
         for entry in data.get("steps") or []:
-            # Protocol v2 §7 gates have no contract file — the recipe entry IS
-            # the contract (show:/approve_as: ride along in the promoted node,
-            # see generate_plan.py where node["kind"] = "gate").
+            # Gates are workflow entries, not standalone step contracts.
             if is_gate_entry(entry):
                 continue
             sid = step_id_of(entry)
@@ -56,9 +55,7 @@ def _step_models() -> dict:
     return sm if isinstance(sm, dict) else {}
 
 
-def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
-    monkeypatch.setenv("ORCHESTRATOR_SKILLS_TEST_OVERRIDE", _SKILLS_DIR)
-    monkeypatch.setenv("ORCHESTRATOR_STEP_CONTRACTS_TEST_OVERRIDE", _STEPS_DIR)
+def test_all_workflow_steps_have_run_or_prompt():
     step_ids = _collect_workflow_steps()
     assert step_ids, "No step IDs found in any workflow"
 
@@ -102,7 +99,7 @@ def test_all_workflow_steps_have_run_or_prompt(monkeypatch):
             if os.path.isfile(local):
                 continue
             try:
-                resolve_prompt_file(contract["prompt"])
+                resolve_prompt_file(contract["prompt"], Path(_CONFIG_DIR))
             except ContractError as exc:
                 missing_charter.append(f"{step_id} -> {exc}")
 

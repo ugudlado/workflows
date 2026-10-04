@@ -14,7 +14,7 @@ import subprocess
 import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+_CONFIG_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
 
 
 def _git(cwd, *args):
@@ -84,7 +84,7 @@ def _build_repo_with_worktree(tmp_path, *, worktree,
 
 
 _SCRIPT = os.path.join(
-    _REPO_ROOT, "config", "steps", "archive-completed-change", "script.sh"
+    _CONFIG_ROOT, "steps", "archive-completed-change", "script.sh"
 )
 
 

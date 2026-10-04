@@ -14,9 +14,9 @@ import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
-_STEP_DIR = os.path.join(_REPO_ROOT, "config", "steps", "design")
+_STEP_DIR = os.path.abspath(os.path.join(_HERE, "..", "steps", "design"))
 _STEP_FILE = os.path.join(_STEP_DIR, "contract.yaml")
-_SKILL_FILE = os.path.join(_REPO_ROOT, "skills", "architect", "SKILL.md")
+_SKILL_FILE = os.path.join(_STEP_DIR, "SKILL.md")
 
 
 def _load_step() -> dict:
@@ -25,7 +25,7 @@ def _load_step() -> dict:
 
 
 def _load_instruction() -> str:
-    """Skill instruction body lives in skills/architect/SKILL.md."""
+    """Skill instruction body lives in the design workflow adapter."""
     step = _load_step()
     if step.get("instruction"):
         return step["instruction"]
@@ -38,10 +38,13 @@ def _load_instruction() -> str:
 class TestDesignAndDraftEmitsTasksYaml:
 
     def test_tasks_yaml_in_outputs(self):
-        """Outputs declaration lives in SKILL.md ## Outputs section."""
+        """The contract declares tasks.yaml and the adapter binds its output path."""
+        assert _load_step()["out"]["tasks"]["artifact"] == "tasks.yaml", (
+            "design contract out.tasks.artifact must be 'tasks.yaml'"
+        )
         instruction = _load_instruction()
-        assert "## Outputs" in instruction and "tasks.yaml" in instruction, (
-            "design SKILL.md ## Outputs does not declare 'tasks.yaml'"
+        assert "{out.tasks}" in instruction, (
+            "design workflow adapter must bind the contract-resolved {out.tasks} path"
         )
 
     def test_tasks_yaml_in_verify(self):

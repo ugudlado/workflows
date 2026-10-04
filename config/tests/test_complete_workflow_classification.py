@@ -16,11 +16,11 @@ from pathlib import Path
 import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+_CONFIG_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_archive_completed_change_contract_is_state_mutating():
-    contract_path = Path(_REPO_ROOT) / "config" / "steps" / "archive-completed-change" / "contract.yaml"
+    contract_path = _CONFIG_ROOT / "steps" / "archive-completed-change" / "contract.yaml"
     assert contract_path.is_file(), f"contract.yaml not found at {contract_path}"
     data = yaml.safe_load(contract_path.read_text()) or {}
     assert data.get("state_mutating") is True, (

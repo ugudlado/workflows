@@ -22,8 +22,9 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 # Load the step module directly (it lives in config/steps/, not the package).
-_STEP_PY = Path(_REPO) / "config" / "steps" / "check-rerun" / "check_rerun.py"
+_STEP_PY = Path(__file__).resolve().parents[1] / "steps" / "check-rerun" / "check_rerun.py"
 _spec = importlib.util.spec_from_file_location("check_rerun", _STEP_PY)
+assert _spec is not None and _spec.loader is not None
 check_rerun = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(check_rerun)
 

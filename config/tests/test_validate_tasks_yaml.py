@@ -12,12 +12,10 @@ import subprocess
 import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
-# Validator + format contract live with the design skill.
-_VALIDATOR = os.path.join(_REPO_ROOT, "skills", "architect", "validate-tasks-yaml.sh")
-_ARTIFACT_FORMATS = os.path.join(
-    _REPO_ROOT, "skills", "architect", "reference", "tasks-format.md"
-)
+_CONFIG_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+# Validator and format reference belong to the design step, not an IDE alias.
+_VALIDATOR = os.path.join(_CONFIG_ROOT, "steps", "design", "validate-tasks-yaml.sh")
+_ARTIFACT_FORMATS = os.path.join(_CONFIG_ROOT, "steps", "design", "reference", "tasks-format.md")
 
 
 def _write_tasks_yaml(tmp_path, content: dict) -> str:

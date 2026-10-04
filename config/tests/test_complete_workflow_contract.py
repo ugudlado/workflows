@@ -18,8 +18,8 @@ import pytest
 import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
-_REPO_STEPS = os.path.join(_REPO_ROOT, "config", "steps")
+_CONFIG_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_REPO_STEPS = os.path.join(_CONFIG_ROOT, "steps")
 _HOME_STEPS = os.path.expanduser("~/.config/orchestrator/config/steps")
 
 

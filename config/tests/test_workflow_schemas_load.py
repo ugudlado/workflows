@@ -1,191 +1,101 @@
-"""
-Workflow schema load test — exercises the real schemas in config/workflows/
-through generate_plan to catch syntax breaks, missing step contracts,
-and malformed flag definitions before they hit autopilot.
-
-Closes the T-0 gap from .tmp/develop-schema-spec.md: previously no test
-loaded the production workflow YAMLs, so freehand schema edits had no
-automated safety net.
-
-Each schema runs with its declared `defaults` flags. The workflow_plan
-is derived directly from the schema's resolved phases, with every step
-counted as active (gating-flag filtering is exercised separately by
-test_generate_plan.test_light_flag_drops_filtered_steps).
-"""
-
-import os
-import re
-import sys
+"""Production schemas and contracts through the current stateless next API."""
 from pathlib import Path
 
 import pytest
 import yaml
 
+from orchestrator_next.nextstep import load_workflow, next_step, step_entries
+from orchestrator_next.parser import AgentStepContract, ScriptStepContract, load_contract_for_step
+from orchestrator_next.workflow_steps import step_id_of
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-# ORC-106: orchestrator_next package at repo root (orchestrator_next/tests -> repo root).
-_REPO_ROOT_STR = os.path.abspath(os.path.join(_HERE, "..", ".."))
-if _REPO_ROOT_STR not in sys.path:
-    sys.path.insert(0, _REPO_ROOT_STR)
-
-from orchestrator_next.generate_plan import generate_plan  # noqa: E402
-
-_REPO_ROOT = Path(_REPO_ROOT_STR)
-_REAL_HOME = _REPO_ROOT / "config"  # config/ holds workflows + steps
+_REAL_HOME = Path(__file__).resolve().parents[1]
 _WORKFLOWS_DIR = _REAL_HOME / "workflows"
-
-# Schemas exercised by orchestrate / autopilot. ORC-108: autopilot is now a
-# real steps-based workflow (config/workflows/autopilot.yaml), run via
-# generate_plan like the others — no longer inline-script-driven.
-# ORC-120: patch and design are first-class workflow schemas.
-_USER_FACING_SCHEMAS = ["feature", "bugfix", "patch", "design", "autopilot"]
-
-_STEP_REF_RE = re.compile(r"^([a-zA-Z0-9_-]+)(?:\s+if\s+(?:not\s+)?[a-zA-Z0-9_]+)?$")
+_USER_FACING_SCHEMAS = sorted(path.stem for path in _WORKFLOWS_DIR.glob("*.yaml"))
 
 
 def _step_id_of(entry):
-    """Extract the step id from a schema step entry (string / skill / prompt / id)."""
-    from orchestrator_next.workflow_steps import step_id_of
-
     return step_id_of(entry)
 
 
-def _resolve_phases_for_test(schema):
-    """Mirror generate_plan._resolve_phases minimally for legacy multi-phase schemas."""
-    raw_phases = schema.get("phases", [])
-    out = []
-    for phase in raw_phases:
-        out.append(phase)
-    return out
-
-
-def _build_workflow_plan(schema):
-    """Build a workflow_plan that marks every declared step active.
-
-    Phase-less schemas (top-level `steps:`) synthesize a single `main` phase
-    matching the engine's _resolve_phases behavior.
-    """
-    if not schema.get("phases") and schema.get("steps"):
-        active = []
-        for step_entry in schema.get("steps", []) or []:
-            step_id = _step_id_of(step_entry)
-            if step_id and not step_id.startswith("_"):
-                active.append(step_id)
-        return {"main": {"active": active, "filtered": []}}
-
-    plan = {}
-    for phase in _resolve_phases_for_test(schema):
-        name = phase.get("name")
-        if not name:
-            continue
-        active = []
-        for step_entry in phase.get("steps", []) or []:
-            step_id = _step_id_of(step_entry)
-            if step_id and not step_id.startswith("_"):
-                active.append(step_id)
-        plan[name] = {"active": active, "filtered": []}
-    return plan
-
-
-def _write_stub_project(repo_root: Path) -> None:
-    """Minimal project.yaml — generate_plan only reads `rules` and `verify_commands`."""
-    project = {
-        "version": 1,
-        "project": {"name": "schema-load-test", "repo": "schema-load-test"},
-        "rules": [],
-        "verify_commands": {"test": "pytest"},
-    }
-    p = repo_root / "spec" / "project.yaml"
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(yaml.safe_dump(project, sort_keys=False))
-
-
-def _write_state(state_dir: Path, schema_name: str, schema: dict) -> Path:
-    workflow_plan = _build_workflow_plan(schema)
-    first_phase = next(iter(workflow_plan)) if workflow_plan else ""
-    state = {
-        "change_id": f"schema-load-{schema_name}",
-        "slug": f"schema-load-{schema_name}",
-        "schema": schema_name,
-        "status": "active",
-        "repo_root": str(state_dir.parent.parent),
-        "workflow_plan": workflow_plan,
-        "phase": first_phase,
-        "step_history": [],
-    }
-    state_dir.mkdir(parents=True, exist_ok=True)
-    p = state_dir / "state.yaml"
-    p.write_text(yaml.safe_dump(state, sort_keys=False))
-    return p
-
-
 @pytest.mark.parametrize("schema_name", _USER_FACING_SCHEMAS)
-def test_real_schema_generates_plan(tmp_path, monkeypatch, schema_name):
-    """Each production schema must promote state.yaml to the nodes shape,
-    covering every active step (ORC-63: plan.yaml eliminated)."""
-    schema_path = _WORKFLOWS_DIR / f"{schema_name}.yaml"
-    assert schema_path.exists(), f"missing real schema at {schema_path}"
-    schema = yaml.safe_load(schema_path.read_text())
+def test_real_schema_loads_stateless_payloads(tmp_path, monkeypatch, schema_name):
+    monkeypatch.chdir(tmp_path)
+    schema = load_workflow(schema_name, _REAL_HOME)
+    entries = step_entries(schema)
+    expected_ids = [_step_id_of(entry) for entry in schema["steps"]]
+    assert [entry["id"] for entry in entries] == expected_ids
+    artifact_outputs = {}
+    for entry in entries:
+        if not entry["_gate"]:
+            contract = load_contract_for_step(entry["id"], _REAL_HOME)
+            artifact_outputs.update({
+                name: f"spec/changes/schema-load/{spec['artifact']}"
+                for name, spec in contract.outputs.items() if spec.get("artifact")
+            })
+    first = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load")
+    assert first["step_id"] == expected_ids[0] and first["route"] == "next"
 
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    _write_stub_project(repo_root)
-    state_path = _write_state(repo_root / ".state" / schema_name, schema_name, schema)
+    for index, entry in enumerate(entries):
+        step_id = entry["id"]
+        result = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load",
+                           after=step_id, status="abandoned")
+        assert result["status"] == "ready"
+        assert result["step_id"] == step_id and result["route"] == "retry"
+        payload = result["payload"]
+        if entry["_gate"]:
+            assert result["kind"] == "gate"
+            assert payload["approve_as"] == entry["approve_as"]
+            # The stateless engine previews known outputs, not approval tokens.
+            assert payload["show"] == {
+                name: artifact_outputs[name] for name in entry["show"]
+                if name in artifact_outputs
+            }
+            for path in payload["show"].values():
+                assert not Path(path).is_absolute()
+            continue
 
-    monkeypatch.setenv("ORCHESTRATOR_CONFIG", str(_REAL_HOME))
+        contract_path = _REAL_HOME / "steps" / step_id / "contract.yaml"
+        assert contract_path.is_file(), f"missing contract for {schema_name}/{step_id}"
+        contract = load_contract_for_step(step_id, _REAL_HOME)
+        assert payload["requires"] == entry.get("requires", "")
+        assert payload["tools"] == contract.tools
+        assert payload["side_effects"] == contract.side_effects
+        for key, specs in (("in", contract.inputs), ("out", contract.outputs)):
+            assert payload[key] == {
+                name: f"spec/changes/schema-load/{spec['artifact']}"
+                for name, spec in specs.items() if spec.get("artifact")
+            }
+        if isinstance(contract, ScriptStepContract):
+            assert result["kind"] == "exec"
+            assert Path(payload["run_path"]).is_file()
+            advanced = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load",
+                                 after=step_id, status="completed")
+            if index + 1 == len(entries):
+                assert advanced["status"] == "done"
+            else:
+                assert advanced["step_id"] == expected_ids[index + 1]
+                assert advanced["route"] == "next"
+        else:
+            assert isinstance(contract, AgentStepContract)
+            assert result["kind"] == "judgment"
+            assert Path(payload["prompt_path"]).is_file()
 
-    generate_plan(str(state_path))
+        if entry.get("on_failure"):
+            failed = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load",
+                               after=step_id, status="failed")
+            assert failed["step_id"] == entry["on_failure"]
+            assert failed["route"] == "on_failure"
+            exhausted = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load",
+                                  after=step_id, status="failed",
+                                  attempt=entry.get("max_retries", 3))
+            assert exhausted["status"] == "needs_you"
+            assert exhausted["reason"] == "retries exhausted"
 
-    # ORC-63: workflow_plan is promoted in place; no plan.yaml is produced.
-    assert not (state_path.parent / "plan.yaml").exists(), (
-        f"plan.yaml should not be written for {schema_name}"
-    )
-    state = yaml.safe_load(state_path.read_text())
-    workflow_plan = state["workflow_plan"]
-
-    expected_plan = _build_workflow_plan(schema)
-    expected_phase_names = list(expected_plan.keys())
-    actual_phase_names = list(workflow_plan.keys())
-    assert actual_phase_names == expected_phase_names, (
-        f"{schema_name}: phase order mismatch — expected {expected_phase_names}, got {actual_phase_names}"
-    )
-
-    for phase_name, phase_block in workflow_plan.items():
-        expected_step_ids = expected_plan[phase_name]["active"]
-        nodes = phase_block["nodes"]
-        actual_step_ids = [n["id"] for n in nodes]
-        assert actual_step_ids == expected_step_ids, (
-            f"{schema_name}/{phase_name}: step list mismatch — "
-            f"expected {expected_step_ids}, got {actual_step_ids}"
-        )
-        for node in nodes:
-            step_id = node["id"]
-            if node.get("kind") == "gate":
-                # Protocol v2 §7: a gate has no contract file — the recipe
-                # entry is the contract, and generate_plan promotes it with
-                # kind: gate rather than skipping it.
-                assert node.get("status") == "pending", (
-                    f"{schema_name}/{phase_name}/{step_id}: gate node status "
-                    f"must be 'pending' at init"
-                )
-                continue
-            # Accept either the directory form (<id>/contract.yaml) or the legacy
-            # flat form (<id>.yaml); select-workflow.yaml stays as a flat file.
-            contract_path = _REAL_HOME / "steps" / step_id / "contract.yaml"
-            flat_path = _REAL_HOME / "steps" / f"{step_id}.yaml"
-            assert contract_path.exists() or flat_path.exists(), (
-                f"{schema_name}/{phase_name}: step '{step_id}' has no contract at "
-                f"{contract_path} or {flat_path} "
-                f"(phantom reference — generate_plan silently skips these)"
-            )
-            assert node.get("status") == "pending", (
-                f"{schema_name}/{phase_name}/{step_id}: node status must be 'pending' at init"
-            )
+    assert list(tmp_path.iterdir()) == []  # No plan/state/run documents are written.
 
 
 # ---------------------------------------------------------------------------
-# Terminal steps — develop schemas end at learn; complete/autopilot
-# own their tails.
+# Terminal steps — every current workflow ends at its report boundary.
 # ---------------------------------------------------------------------------
 
 
@@ -212,7 +122,8 @@ _SCHEMA_TERMINAL_STEP = {
     "patch": "workflow-report",
     "design": "workflow-report",
     "implement": "workflow-report",
-    "autopilot": "workflow-report",
+    "feature-remote": "workflow-report",
+    "research": "workflow-report",
     "complete": "workflow-report",
 }
 
@@ -248,7 +159,7 @@ def test_patch_schema_retry_edges():
     """patch.yaml: implement and review carry ORC-120 retry routing.
 
     Default-edged fields are omitted from the workflow entry:
-      - max_retries defaults to 3 in record._resolve_routing
+      - max_retries defaults to 3 in next_step
       - on_success defaults to advance (next declaration-order step)
     Only non-default routing survives in the schema.
     """
