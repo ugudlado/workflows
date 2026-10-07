@@ -1,6 +1,6 @@
 """Backlog REST integration: ticket context, project resolution, and API helpers.
 
-Covers config/lib/ticket/backlog-api.sh and the load-ticket-context step — all
+Covers config/lib/ticket/backlog-api.sh and fetch-ticket.sh (run by the load-ticket-context judgment step) — all
 config-owned bash, exercised via subprocess. Engine-boundary assertions (that
 orchestrator_next has no ticket-fetching logic of its own) live in
 orchestrator_next/tests/test_run_loop_ticket_agnostic.py instead.
@@ -21,21 +21,18 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 _REPO_PATH = Path(_REPO)
-_LOAD_SCRIPT = _REPO_PATH / "steps" / "load-ticket-context" / "script.sh"
+_FETCH_SCRIPT = _REPO_PATH / "lib" / "ticket" / "fetch-ticket.sh"
 _API_SH = _REPO_PATH / "lib" / "ticket" / "backlog-api.sh"
 
 
-def test_load_ticket_context_success(tmp_path, monkeypatch):
-    state_dir = tmp_path / "st"
-    state_dir.mkdir()
-    state_yaml = state_dir / "state.yaml"
-    state_yaml.write_text(yaml.safe_dump({
-        "ticket_id": "orc-125",
-        "change_id": "orc-125",
-    }))
-    (tmp_path / "spec").mkdir(exist_ok=True)
-    (tmp_path / "spec" / "project.yaml").write_text(yaml.safe_dump({"ticketing": "backlog"}))
+def _run_fetch(tmp_path, args, env):
+    return subprocess.run(
+        ["bash", str(_FETCH_SCRIPT), *args],
+        capture_output=True, text=True, cwd=str(tmp_path), env=env,
+    )
 
+
+def test_fetch_ticket_success(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     curl = fake_bin / "curl"
@@ -50,10 +47,7 @@ def test_load_ticket_context_success(tmp_path, monkeypatch):
             {"index": 1, "checked": False, "text": "REST fetch works"},
         ],
     }
-    curl.write_text(
-        "#!/usr/bin/env bash\n"
-        "echo '" + json.dumps(payload) + "'\n"
-    )
+    curl.write_text("#!/usr/bin/env bash\necho '" + json.dumps(payload) + "'\n")
     curl.chmod(0o755)
 
     env = os.environ.copy()
@@ -61,87 +55,66 @@ def test_load_ticket_context_success(tmp_path, monkeypatch):
     env["BACKLOG_URL"] = "https://example.test"
     env["BACKLOG_TOKEN"] = "tok"
     env["BACKLOG_PROJECT_ID"] = "orc"
-    env["REPO_ROOT"] = str(tmp_path)
-    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
-    env["CHANGE_ID"] = "orc-125"
-    env["ORCHESTRATOR_CHANGE_ID"] = "orc-125"
-    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
-    env["ORCHESTRATOR_WORKTREE_ARTIFACT_DIR"] = str(tmp_path / "spec" / "changes")
 
-    proc = subprocess.run(
-        ["bash", str(_LOAD_SCRIPT)],
-        capture_output=True, text=True, cwd=str(tmp_path), env=env,
-    )
+    proc = _run_fetch(tmp_path, ["orc-125"], env)
     assert proc.returncode == 0, proc.stderr
-    out = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert out["outputs"]["ticket_context"] == "ok"
-    assert out["outputs"]["path"] == str(tmp_path / "artifacts" / "ticket-context.md")
-    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
-    assert "Replace CLI with REST" in body
-    assert "REST fetch works" in body
-    assert "Use BACKLOG_URL" in body
+    assert "Replace CLI with REST" in proc.stdout
+    assert "REST fetch works" in proc.stdout
+    assert "Use BACKLOG_URL" in proc.stdout
 
 
-def test_load_ticket_context_unset_env_skips(tmp_path):
-    """No ticketing env → a ticket id gets a local stub, not a remote fetch."""
-    state_dir = tmp_path / "st"
-    state_dir.mkdir()
-    state_yaml = state_dir / "state.yaml"
-    state_yaml.write_text(yaml.safe_dump({"ticket_id": "ORC-125", "change_id": "orc-125"}))
+def test_fetch_ticket_unset_env_fails(tmp_path):
+    """No ticketing env: the judgment step must not call this; it fails cleanly."""
     env = os.environ.copy()
     for k in ("BACKLOG_URL", "BACKLOG_TOKEN", "BACKLOG_PROJECT", "BACKLOG_PROJECT_ID"):
         env.pop(k, None)
-    env["REPO_ROOT"] = str(tmp_path)
-    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
-    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
-
-    proc = subprocess.run(
-        ["bash", str(_LOAD_SCRIPT)],
-        capture_output=True, text=True, cwd=str(tmp_path), env=env,
-    )
-    assert proc.returncode == 0, proc.stderr
-    out = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert out["status"] == "completed"
-    assert out["outputs"]["ticket_context"] == "stub"
-    assert out["state_patch"]["ticket_id"] == "ORC-125"
-    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
-    assert "Ticketing provider unset" in body
+    proc = _run_fetch(tmp_path, ["ORC-125"], env)
+    assert proc.returncode == 1
+    assert proc.stdout == ""
+    assert "ticketing not configured" in proc.stderr
 
 
-def test_load_ticket_context_missing_env_aborts_workflow(tmp_path):
-    """Ticketing env present but incomplete (no project id) must exit 1 so the
-    run loop aborts instead of inventing scope. (Fully-unset env skips — see
-    the ticketing-unset skip test.)"""
-    state_dir = tmp_path / "st"
-    state_dir.mkdir()
-    state_yaml = state_dir / "state.yaml"
-    state_yaml.write_text(yaml.safe_dump({
-        "ticket_id": "ORC-125",
-        "change_id": "orc-125",
-    }))
-    (tmp_path / "spec").mkdir(exist_ok=True)
+def test_fetch_ticket_missing_project_fails(tmp_path):
+    """Credentials present but no project id must exit 1, never invent scope."""
     env = os.environ.copy()
     env["BACKLOG_URL"] = "https://example.invalid"
     env["BACKLOG_TOKEN"] = "tok"
     env.pop("BACKLOG_PROJECT", None)
     env.pop("BACKLOG_PROJECT_ID", None)
-    env["REPO_ROOT"] = str(tmp_path)
-    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
-    env["CHANGE_ID"] = "orc-125"
-    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
+    proc = _run_fetch(tmp_path, ["ORC-125"], env)
+    assert proc.returncode == 1
+    assert proc.stdout == ""
+    assert "BACKLOG_PROJECT_ID" in proc.stderr
 
-    proc = subprocess.run(
-        ["bash", str(_LOAD_SCRIPT)],
-        capture_output=True, text=True, cwd=str(tmp_path), env=env,
-    )
-    assert proc.returncode == 1, proc.stderr
-    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
-    assert "TICKET FETCH FAILED" in body
-    assert "do not invent scope" in body
-    assert "ERROR" in proc.stderr
-    out = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert out["status"] == "failed"
-    assert out["outputs"]["ticket_context"] == "failed"
+
+def test_fetch_ticket_bad_id_fails(tmp_path):
+    env = os.environ.copy()
+    for args in ([], ["ORC-12x"], ["not a ticket"]):
+        proc = _run_fetch(tmp_path, args, env)
+        assert proc.returncode == 1
+        assert proc.stdout == ""
+        assert "usage" in proc.stderr
+
+
+def test_run_ticket_id_prefers_artifact_over_state(tmp_path):
+    arts = tmp_path / "artifacts"
+    arts.mkdir()
+    state = tmp_path / "state.yaml"
+    state.write_text("ticket_id: OLD-1\n")
+
+    def ticket_id(extra_env):
+        env = {k: v for k, v in os.environ.items() if k != "ORCHESTRATOR_ARTIFACTS_DIR"}
+        env.update(extra_env)
+        return subprocess.run(
+            ["bash", "-c", f"source '{_API_SH}' && backlog_api_run_ticket_id '{state}'"],
+            capture_output=True, text=True, env=env,
+        ).stdout
+
+    env = {"ORCHESTRATOR_ARTIFACTS_DIR": str(arts)}
+    assert ticket_id(env) == "OLD-1"  # no ticket.json: state fallback
+    (arts / "ticket.json").write_text(json.dumps({"ticket_id": "ORC-7"}))
+    assert ticket_id(env) == "ORC-7"
+    assert ticket_id({}) == "OLD-1"  # no artifacts dir: state fallback
 
 
 def _resolve_project(env_overrides: dict, repo_root: str | None) -> str:

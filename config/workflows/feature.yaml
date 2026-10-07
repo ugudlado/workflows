@@ -5,7 +5,7 @@ inputs:
 steps:
   - check-rerun # halt if this slug's run already finished (workflow's own decision)
   - create-worktree # creates worktree + branch; writes worktree_path+branch to state
-  - load-ticket-context # REST fetch ticket body → ticket-context.md (loop stays agnostic)
+  - load-ticket-context # judgment: ticket fetch or free-text brief → ticket-context.md (+ ticket.json)
   - explore
   - ux-design
   - design

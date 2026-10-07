@@ -11,13 +11,9 @@ LIB="$(cd "$(dirname "$0")" && pwd)/backlog-api.sh"
 # shellcheck source=backlog-api.sh
 source "$LIB"
 
-_read_state_field() {
-  local key="$1"
-  grep -E "^${key}:" "$STATE_YAML" 2>/dev/null | head -1 | sed -E 's/^[^:]+:[[:space:]]*//' | tr -d '"'"'" || true
-}
 
 ticket_id=""
-[ -n "$STATE_YAML" ] && ticket_id="$(_read_state_field ticket_id)"
+ticket_id="$(backlog_api_run_ticket_id "$STATE_YAML")"
 ticketing="$(backlog_api_ticketing)"
 if [ -n "$ticket_id" ]; then
   ticket_id="$(printf '%s' "$ticket_id" | tr '[:lower:]' '[:upper:]')"

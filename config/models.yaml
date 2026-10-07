@@ -64,5 +64,6 @@ step_models:
   open-pr: standard
   human-review: standard
   implement: code
+  load-ticket-context: fast
   intake-research: code
   synthesize-findings: code

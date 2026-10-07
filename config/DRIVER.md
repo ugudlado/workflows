@@ -6,7 +6,7 @@ driver's state file unless those paths happen to coincide.
 
 Artifacts live outside the worktree. The driver must pass
 `--artifacts-dir <abs run dir>/artifacts` on every `next` call: the pack
-requires `ORCHESTRATOR_ARTIFACTS_DIR` (`load-ticket-context` fails without it)
+requires `ORCHESTRATOR_ARTIFACTS_DIR` (exec steps fail without it)
 and no workflow declares `artifacts_root`. Artifacts go to `payload.out` /
 `$ORCHESTRATOR_ARTIFACTS_DIR`; code goes to `$WORKTREE_PATH`. Never derive one
 from the other.
@@ -33,3 +33,14 @@ the archive.
 `check-rerun` stops a slug whose run already finished (exits non-zero, so the
 engine answers `needs_you`): its `step_history` has a completed
 `workflow-report`. Start over by deleting the run dir.
+
+# `load-ticket-context` (judgment)
+
+The run's input is the user's message. Pass it to this step's subagent in the
+brief as `User direction: <text>`; there is no state input. The step writes
+`ticket-context.md` and, for a real ticket id, `ticket.json`
+(`{"ticket_id": "ORC-123"}`) in the artifacts dir. Judgment steps cannot patch
+state, so `ticket-start`/`ticket-done`/`ticket-sync` read the id from
+`$ORCHESTRATOR_ARTIFACTS_DIR/ticket.json`, falling back to `ticket_id` in the
+state file. On `ticket_context_status: await_input`, relay the `ask` and
+re-run the step with the answer as the new `User direction`.

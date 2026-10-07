@@ -90,7 +90,6 @@ d["worktree_path"] = wt
 d["branch"] = "feature/" + d.get("change_id", "canary")
 yaml.safe_dump(d, open(p, "w"), sort_keys=False)
 PY
-run_step load-ticket-context
 run_step mark-change-completed
 mkdir -p "$REPO/spec/changes/archive"
 run_step archive-completed-change ARCHIVE_PATH="$REPO/spec/changes/archive/$CHANGE_ID" WORKTREE_ROOT="${WORKTREE_PATH:-}"

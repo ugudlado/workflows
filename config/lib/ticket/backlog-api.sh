@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared Backlog.md REST helpers for workflow step scripts.
 # Requires: curl, python3. Auth via BACKLOG_URL + BACKLOG_TOKEN + BACKLOG_PROJECT_ID.
-# Sourced by load-ticket-context / ticket-sync / ticket-done — not executed alone.
+# Sourced by fetch-ticket / ticket-sync / ticket-done — not executed alone.
 #
 # A PROJECT IS REQUIRED. Backlog's data routes reject a request that names none: a task's
 # identity is the pair (project, display id) — display ids are only unique WITHIN a project, so
@@ -152,4 +152,19 @@ if acs:
         lines.append(f"- [{checked}] {prefix}{text}".rstrip())
 print("\n".join(lines))
 '
+}
+
+# Ticket id for this run: $ORCHESTRATOR_ARTIFACTS_DIR/ticket.json (written by
+# load-ticket-context) first, else the `ticket_id:` field of the state yaml
+# (path in $1). Prints the id as written, or nothing.
+backlog_api_run_ticket_id() {
+  local state_yaml="${1:-}" id=""
+  if [ -n "${ORCHESTRATOR_ARTIFACTS_DIR:-}" ] && [ -f "${ORCHESTRATOR_ARTIFACTS_DIR}/ticket.json" ]; then
+    id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("ticket_id") or "")' \
+      "${ORCHESTRATOR_ARTIFACTS_DIR}/ticket.json" 2>/dev/null || true)"
+  fi
+  if [ -z "$id" ] && [ -n "$state_yaml" ]; then
+    id="$(grep -E "^ticket_id:" "$state_yaml" 2>/dev/null | head -1 | sed -E 's/^[^:]+:[[:space:]]*//' | tr -d '"'"'" || true)"
+  fi
+  printf '%s' "$id"
 }

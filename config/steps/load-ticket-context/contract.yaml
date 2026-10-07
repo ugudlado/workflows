@@ -1,10 +1,12 @@
 id: load-ticket-context
-version: 2
-kind: exec
-run: script.sh
+version: 3
+kind: judgment
+prompt: SKILL.md
+max_turns: 15
 tools: [fs.read, fs.write, shell.run]
 side_effects: []
 in: {}
 out:
   ticket: { artifact: ticket-context.md }
-  ticket_context: { type: string }
+  ticket_ref: { artifact: ticket.json, optional: true }
+  ticket_context_status: { type: enum, values: [complete, await_input] }
