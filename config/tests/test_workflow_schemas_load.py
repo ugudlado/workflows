@@ -194,11 +194,14 @@ def test_patch_schema_skips_the_design_phase_entirely():
     assert steps.index("create-worktree") < steps.index("implement")
 
 
+_SIGNOFF_GATES = {"merge-signoff", "pr-signoff"}
+
+
 def _post_merge_workflows():
     found = []
     for name in _USER_FACING_SCHEMAS:
         steps = yaml.safe_load((_WORKFLOWS_DIR / f"{name}.yaml").read_text())["steps"]
-        if any(isinstance(e, dict) and e.get("gate") == "merge-signoff" for e in steps):
+        if any(isinstance(e, dict) and e.get("gate") in _SIGNOFF_GATES for e in steps):
             found.append(name)
     return found
 
@@ -211,7 +214,7 @@ def test_post_merge_workflow_set_is_expected():
 def test_post_merge_side_effect_steps_require_merge_token(schema_name):
     steps = yaml.safe_load((_WORKFLOWS_DIR / f"{schema_name}.yaml").read_text())["steps"]
     gate_idx = next(i for i, e in enumerate(steps)
-                    if isinstance(e, dict) and e.get("gate") == "merge-signoff")
+                    if isinstance(e, dict) and e.get("gate") in _SIGNOFF_GATES)
     for entry in steps[gate_idx + 1:]:
         step_id = step_id_of(entry)
         contract = load_contract_for_step(step_id, _REAL_HOME)
@@ -235,3 +238,21 @@ def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
     done = next_step("research", config_root=_REAL_HOME, slug="r1", after="intake-research",
                      status="completed", out={"intake_status": "complete"})
     assert done["step_id"] == "synthesize-findings"
+
+
+def test_feature_schema_ends_in_pr_not_merge():
+    steps = _schema_step_ids("feature")
+    assert steps.index("code-review") + 1 == steps.index("verify-changes")
+    assert _schema_step_entry("feature", "verify-changes")["on_failure"] == "implement"
+    tail = steps[steps.index("mark-change-completed"):]
+    assert tail == ["mark-change-completed", "open-pr", "workflow-report"]
+    assert not {"archive-completed-change", "merge-to-main", "remove-worktree", "ticket-done"} & set(steps)
+    assert _schema_step_entry("feature", "open-pr")["requires"] == "merge_token"
+
+
+def test_open_pr_contract():
+    contract = load_contract_for_step("open-pr", _REAL_HOME)
+    assert isinstance(contract, AgentStepContract)
+    assert contract.side_effects == ["write:remote"]
+    assert contract.outputs["pr"]["artifact"] == "pr.md"
+    assert contract.outputs["pr_urls"]["type"] == "string"

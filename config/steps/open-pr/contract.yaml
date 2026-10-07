@@ -1,0 +1,16 @@
+id: open-pr
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 80
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch, git.commit, git.push, net.fetch]
+side_effects: [write:remote]
+in:
+  design: { artifact: design.md, optional: true }
+  tasks: { artifact: tasks.yaml, optional: true }
+  code_review: { artifact: code-review.md, optional: true }
+  verification: { artifact: verify-changes.md, optional: true }
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  pr: { artifact: pr.md }
+  pr_urls: { type: string }

@@ -1,5 +1,5 @@
 name: feature
-version: 4
+version: 5
 # Artifacts keep the pack's historical location (engine default is
 # .orchestrator/runs/<slug>/artifacts/). Plan Phase 2.1.
 artifacts_root: spec/changes/{slug}
@@ -26,21 +26,19 @@ steps:
   - id: code-review
     on_failure: implement
     max_retries: 8
+  - id: verify-changes # requirement met on the branch, evidence cited — the gate before human review
+    on_failure: implement
   - id: human-review # human feedback after review; may reset_to implement|design|…
     on_failure: implement
     max_retries: 8
   - ticket-qa # ticket -> Verify
   - learn
   - persist-learnings
-  # complete phase (merge / teardown) — runs only after human-review completes
-  - { gate: merge-signoff, show: [design, tasks, code_review], approve_as: merge_token }
+  # complete phase — ends in a pull request, not a local merge. The worktree
+  # stays for review fixes; the ticket is done when the PR merges, and
+  # spec/changes is never archived into the branch (it would land in the PR).
+  - { gate: pr-signoff, show: [design, tasks, code_review, verification], approve_as: merge_token }
   - mark-change-completed
-  - id: archive-completed-change
-    requires: merge_token
-  - id: merge-to-main
-    requires: merge_token
-  - id: remove-worktree
-    requires: merge_token
-  - id: ticket-done
+  - id: open-pr # rebase, full verify, push, gh pr create with evidence
     requires: merge_token
   - workflow-report

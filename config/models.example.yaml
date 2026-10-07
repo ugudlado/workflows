@@ -38,6 +38,7 @@ step_models:
   design-review: standard
   ux-critique: standard
   verify-changes: standard
+  open-pr: standard
   human-review: standard
   implement: code
   intake-research: code
