@@ -29,24 +29,12 @@ PY
 user_input="$(_read_state_py user_input)"
 ticket_id="$(_read_state_py ticket_id)"
 ticketing="$(backlog_api_ticketing)"
-change_id="${CHANGE_ID:-${ORCHESTRATOR_CHANGE_ID:-$(_read_state_py change_id)}}"
-slug="$(_read_state_py slug)"
-if [ -z "$change_id" ] && [ -n "$slug" ]; then
-  change_id="$slug"
-fi
 
-# Prefer worktree artifact dir (same as discovery.md / design.md); else repo spec/changes.
-if [ -n "${ORCHESTRATOR_WORKTREE_ARTIFACT_DIR:-${WORKTREE_ARTIFACT_DIR:-}}" ] && [ -n "$change_id" ]; then
-  ARTIFACT_BASE="${ORCHESTRATOR_WORKTREE_ARTIFACT_DIR:-$WORKTREE_ARTIFACT_DIR}"
-  OUT_DIR="${ARTIFACT_BASE}/${change_id}"
-elif [ -n "$change_id" ]; then
-  OUT_DIR="${REPO_ROOT}/spec/changes/${change_id}"
-else
-  OUT_DIR="${REPO_ROOT}/spec/changes"
-fi
+# Artifacts live outside the worktree, in the run's artifact dir named by the engine.
+OUT_DIR="${ORCHESTRATOR_ARTIFACTS_DIR:?orchestrator: ORCHESTRATOR_ARTIFACTS_DIR required (driver must pass --artifacts-dir)}"
 mkdir -p "$OUT_DIR"
 OUT="${OUT_DIR}/ticket-context.md"
-REL_PATH="spec/changes/${change_id:-}/ticket-context.md"
+REL_PATH="$OUT" # cosmetic: nothing consumes outputs.path
 
 _fail() {
   local msg="$1"

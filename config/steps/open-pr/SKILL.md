@@ -22,7 +22,7 @@ You publish the run branch as one or more PRs and own the result.
   description, required attribution lines. When the repo says nothing: one PR.
 - Real output only. Quote what commands printed; never assume a pass.
 - Never merge, never force-push a branch you did not create, never commit run
-  artifacts (`spec/changes/`) or screenshots to the feature branch.
+  artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR` contents) or screenshots to the feature branch.
 - Failing checks or rebase conflicts mean `failed` and no PR.
 
 ## Steps
@@ -55,5 +55,5 @@ You publish the run branch as one or more PRs and own the result.
 
 - Every PR URL resolves (`gh pr view`) and its body has all seven sections.
 - Evidence in the body is pasted from this run's real command output.
-- The feature branch contains no `spec/changes/` files or screenshots.
+- The feature branch contains no run artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR` contents) or screenshots.
 - Nothing was merged or force-pushed.

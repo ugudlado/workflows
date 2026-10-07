@@ -29,7 +29,7 @@ def test_real_schema_loads_stateless_payloads(tmp_path, monkeypatch, schema_name
         if not entry["_gate"]:
             contract = load_contract_for_step(entry["id"], _REAL_HOME)
             artifact_outputs.update({
-                name: f"spec/changes/schema-load/{spec['artifact']}"
+                name: f".orchestrator/runs/schema-load/artifacts/{spec['artifact']}"
                 for name, spec in contract.outputs.items() if spec.get("artifact")
             })
     first = next_step(schema_name, config_root=_REAL_HOME, slug="schema-load")
@@ -62,7 +62,7 @@ def test_real_schema_loads_stateless_payloads(tmp_path, monkeypatch, schema_name
         assert payload["side_effects"] == contract.side_effects
         for key, specs in (("in", contract.inputs), ("out", contract.outputs)):
             assert payload[key] == {
-                name: f"spec/changes/schema-load/{spec['artifact']}"
+                name: f".orchestrator/runs/schema-load/artifacts/{spec['artifact']}"
                 for name, spec in specs.items() if spec.get("artifact")
             }
         if isinstance(contract, ScriptStepContract):
@@ -175,7 +175,7 @@ def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
     assert ask["step_id"] == "intake-research"
     assert ask["await_input"]["ask"] == "Audience?"
 
-    intake = tmp_path / "spec" / "changes" / "r1" / "intake.json"
+    intake = tmp_path / ".orchestrator" / "runs" / "r1" / "artifacts" / "intake.json"
     intake.parent.mkdir(parents=True)
     intake.write_text("{}")
     done = next_step("research", config_root=_REAL_HOME, slug="r1", after="intake-research",

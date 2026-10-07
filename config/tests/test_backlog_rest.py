@@ -62,6 +62,7 @@ def test_load_ticket_context_success(tmp_path, monkeypatch):
     env["BACKLOG_TOKEN"] = "tok"
     env["BACKLOG_PROJECT_ID"] = "orc"
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["CHANGE_ID"] = "orc-125"
     env["ORCHESTRATOR_CHANGE_ID"] = "orc-125"
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
@@ -74,8 +75,8 @@ def test_load_ticket_context_success(tmp_path, monkeypatch):
     assert proc.returncode == 0, proc.stderr
     out = json.loads(proc.stdout.strip().splitlines()[-1])
     assert out["outputs"]["ticket_context"] == "ok"
-    assert out["outputs"]["path"] == "spec/changes/orc-125/ticket-context.md"
-    body = (tmp_path / "spec" / "changes" / "orc-125" / "ticket-context.md").read_text()
+    assert out["outputs"]["path"] == str(tmp_path / "artifacts" / "ticket-context.md")
+    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
     assert "Replace CLI with REST" in body
     assert "REST fetch works" in body
     assert "Use BACKLOG_URL" in body
@@ -91,6 +92,7 @@ def test_load_ticket_context_unset_env_skips(tmp_path):
     for k in ("BACKLOG_URL", "BACKLOG_TOKEN", "BACKLOG_PROJECT", "BACKLOG_PROJECT_ID"):
         env.pop(k, None)
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
 
     proc = subprocess.run(
@@ -102,7 +104,7 @@ def test_load_ticket_context_unset_env_skips(tmp_path):
     assert out["status"] == "completed"
     assert out["outputs"]["ticket_context"] == "stub"
     assert out["state_patch"]["ticket_id"] == "ORC-125"
-    body = (tmp_path / "spec/changes/orc-125/ticket-context.md").read_text()
+    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
     assert "Ticketing provider unset" in body
 
 
@@ -124,6 +126,7 @@ def test_load_ticket_context_missing_env_aborts_workflow(tmp_path):
     env.pop("BACKLOG_PROJECT", None)
     env.pop("BACKLOG_PROJECT_ID", None)
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["CHANGE_ID"] = "orc-125"
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
 
@@ -132,7 +135,7 @@ def test_load_ticket_context_missing_env_aborts_workflow(tmp_path):
         capture_output=True, text=True, cwd=str(tmp_path), env=env,
     )
     assert proc.returncode == 1, proc.stderr
-    body = (tmp_path / "spec" / "changes" / "orc-125" / "ticket-context.md").read_text()
+    body = (tmp_path / "artifacts" / "ticket-context.md").read_text()
     assert "TICKET FETCH FAILED" in body
     assert "do not invent scope" in body
     assert "ERROR" in proc.stderr
@@ -259,6 +262,7 @@ def _run_ticket_sync(tmp_path: Path, env_overrides: dict, *, comment_fails: bool
     env["BACKLOG_TOKEN"] = "tok"
     env["BACKLOG_PROJECT_ID"] = "orc"
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
     env["TICKET_SYNC_STATUS"] = "In Progress"
     env["TICKET_SYNC_LOG_PREFIX"] = "ticket-start"
@@ -319,6 +323,7 @@ def test_ticket_sync_noop_with_status_but_no_backlog_url(tmp_path):
     for k in ("BACKLOG_URL", "BACKLOG_TOKEN", "BACKLOG_PROJECT", "BACKLOG_PROJECT_ID"):
         env.pop(k, None)
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
     env["TICKET_SYNC_STATUS"] = "In Progress"
     env["TICKET_SYNC_LOG_PREFIX"] = "ticket-start"
@@ -374,6 +379,7 @@ def _run_ticket_done(tmp_path: Path, current_status: str) -> tuple:
     env["BACKLOG_TOKEN"] = "tok"
     env["BACKLOG_PROJECT_ID"] = "orc"
     env["REPO_ROOT"] = str(tmp_path)
+    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
     env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
     env["TICKET_SYNC_STATUS"] = "Done"
     env["TICKET_SYNC_LOG_PREFIX"] = "ticket-done"

@@ -43,13 +43,7 @@ not use an `extends` prompt.
      a. Every artifact exceeds minimum requirements (not just meets them)
      b. No TODO, FIXME, or placeholder text remains in outputs
      c. No retries were used this round
-4. Baseline comparison (non-blocking):
-   - Read archived state.yaml files: `spec/changes/archive/*/state.yaml`.
-   - Filter entries matching current schema (e.g., feature) via the `schema:` field.
-   - Compute average `metrics.review_score_avg` across those entries (skip entries missing this field).
-   - If current overall is 2 or more points below that average: emit a warning in the report
-     ("Quality regression: current score N is 2+ below historical average M for this schema/phase").
-   - If no archived state.yaml files exist or no matching entries: skip silently.
+4. Baseline comparison: removed (runs are not archived; there is no history to compare).
 5. Quarantine review (implement phase only):
    - If current phase is not implement: skip this step.
    - Read state.yaml for `quarantine_events` (may be absent or empty).

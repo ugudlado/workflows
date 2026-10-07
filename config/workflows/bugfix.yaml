@@ -1,6 +1,5 @@
 name: bugfix
 version: 3
-artifacts_root: spec/changes/{slug}
 inputs:
   ticket: { type: string }
 steps:

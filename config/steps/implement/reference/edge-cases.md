@@ -8,8 +8,8 @@ Consult this file only when you hit one of the states named below. The mainline
 When `design.md` and `tasks.yaml` are both absent, this is a patch-schema run.
 Do NOT block or stop because design artifacts are missing.
 
-- Read the ticket body from `$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/ticket-context.md`
-  (`spec/changes/<slug>/ticket-context.md`, written by `load-ticket-context`).
+- Read the ticket body from `$ORCHESTRATOR_ARTIFACTS_DIR/ticket-context.md`
+  (the `{in.ticket}` path; written by `load-ticket-context`).
   That file is the spec.
 - Derive work items from its acceptance criteria and description.
 - Create `tasks.yaml` in the artifact dir only when you need to track multiple

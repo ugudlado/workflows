@@ -1,7 +1,7 @@
 """Step-contract presence for the complete-phase teardown tail.
 
 feature/bugfix pause at `ticket-qa`; `orchestrator complete` runs the finish
-spine (complete.yaml). Its tail is archive-completed-change → merge-to-main →
+spine (complete.yaml). Its tail is merge-to-main →
 remove-worktree → ticket-done, all of which dispatch as real directory-form
 DAG steps (f0d65c4 made merge-to-main and remove-worktree explicit).
 
@@ -36,31 +36,10 @@ def test_repo_and_home_step_dirs_are_the_same_tree():
     )
 
 
-def test_archive_completed_change_contract_present():
-    path = os.path.join(_REPO_STEPS, "archive-completed-change", "contract.yaml")
-    assert os.path.isfile(path), f"missing step contract: {path}"
-
-
-def test_archive_completed_change_contract_shape():
-    path = os.path.join(_REPO_STEPS, "archive-completed-change", "contract.yaml")
-    contract = yaml.safe_load(open(path).read())
-    assert contract.get("id") == "archive-completed-change", (
-        f"contract id must be 'archive-completed-change', got {contract.get('id')!r}"
-    )
-    assert contract.get("run") == "script.sh", (
-        f"contract run must be 'script.sh' (directory-form), "
-        f"got {contract.get('run')!r}"
-    )
-    assert contract.get("outputs") in (None, []), (
-        f"archive-completed-change must declare no outputs (pre-record contract), "
-        f"got {contract.get('outputs')!r}"
-    )
-
-
 def test_complete_workflow_contract_absent():
     path = os.path.join(_REPO_STEPS, "complete-workflow", "contract.yaml")
     assert not os.path.isfile(path), (
-        f"complete-workflow wrapper step removed; archive is dispatched directly: {path}"
+        f"complete-workflow wrapper step removed; archive step removed: {path}"
     )
 
 

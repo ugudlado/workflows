@@ -2,7 +2,7 @@
 # Test: mark-change-completed step contract
 #
 # Case 1 (T-1): Step file exists and contains required field-write instructions
-#   for status, completed_at, and archive_path.
+#   for status and completed_at.
 # Case 2 (T-3): Step contains a field-presence validator that warns to stderr
 #   about missing usage.duration_ms / usage.tool_uses and exits 0.
 #
@@ -42,15 +42,12 @@ if [[ ! -f "$STEP_FILE" ]]; then
 fi
 
 # ── Case 1: Required field writes ────────────────────────────────────────
-# Step must instruct the agent to write: status: completed, completed_at, archive_path
+# Step must instruct the agent to write: status: completed, completed_at
 grep -q 'status.*completed\|status: completed' "$STEP_FILE"
 check "instruction includes status: completed write" $?
 
 grep -q 'completed_at' "$STEP_FILE"
 check "instruction includes completed_at write" $?
-
-grep -q 'archive_path' "$STEP_FILE"
-check "instruction includes archive_path write" $?
 
 # Must be an inline step (no agent: field, or agent: inline)
 # FR-1 specifies inline step

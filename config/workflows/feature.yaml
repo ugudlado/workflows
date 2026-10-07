@@ -1,12 +1,9 @@
 name: feature
 version: 6
-# Artifacts keep the pack's historical location (engine default is
-# .orchestrator/runs/<slug>/artifacts/). Plan Phase 2.1.
-artifacts_root: spec/changes/{slug}
 inputs:
   ticket: { type: string }
 steps:
-  - check-rerun # halt if this feature is already archived (workflow's own decision)
+  - check-rerun # halt if this slug's run already finished (workflow's own decision)
   - create-worktree # creates worktree + branch; writes worktree_path+branch to state
   - load-ticket-context # REST fetch ticket body → ticket-context.md (loop stays agnostic)
   - explore
@@ -36,7 +33,7 @@ steps:
   - persist-learnings
   # complete phase — ends in a pull request, not a local merge. The worktree
   # stays for review fixes; the ticket is done when the PR merges, and
-  # spec/changes is never archived into the branch (it would land in the PR).
+  # run artifacts live outside the worktree and never enter the branch.
   - { gate: pr-signoff, show: [design, tasks, code_review, verification], approve_as: merge_token }
   - mark-change-completed
   - id: open-pr # rebase, full verify, push, gh pr create with evidence

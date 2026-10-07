@@ -14,7 +14,7 @@ deliberately short — the full charter lives on disk, not in the thread.
    including any "Verify" checklist before you're done. Do not skip
    verification steps.
 3. Write artifacts to the exact paths the charter specifies
-   (`$WORKTREE_ARTIFACT_DIR/$CHANGE_ID/<file>.md` etc.) — do not paste the
+   (`$ORCHESTRATOR_ARTIFACTS_DIR/<file>.md` etc.) — do not paste the
    artifact content into chat instead of writing the file.
 4. When done, write the `COMPLETION:` data the charter asks for
    (status/artifacts/outputs — exact shape, TeamLead parses it

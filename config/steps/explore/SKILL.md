@@ -17,11 +17,6 @@ emits the completion protocol. Do not use an `extends` prompt.
 
 ## Instructions
 
-0. **Rerun guard (do this first):** Under `$REPO_ROOT/spec/changes/archive/`, check whether
-   this change already completed (`status: completed` or `mark-change-completed` in
-   archived `state.yaml` for the same `change_id` / ticket). If yes, write a short
-   `discovery.md` to `{out.discovery}` that records `already_completed: true` and the
-   prior `archive_path`. Do not redo the codebase survey.
 1. Search the codebase for files, patterns, and modules relevant to the description.
    First read `{in.ticket}` when it exists — that file is the
    ticket body (title, description, ACs). Treat it as the source of truth for

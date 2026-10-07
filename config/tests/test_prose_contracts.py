@@ -37,7 +37,7 @@ def test_driver_uses_native_artifact_handoff():
     content = _read("DRIVER.md")
     assert "payload.run_path" in content
     assert '["--proposed-scenarios", payload.in.proposed_scenarios]' in content
-    assert "payload.env" in content and "cwd = `WORKTREE_PATH`" in content
+    assert "payload.env" in content and "cwd is irrelevant" in content and "--artifacts-dir" in content
     assert "absence is a no-op" in content
 
 
