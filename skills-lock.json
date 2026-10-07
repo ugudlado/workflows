@@ -50,10 +50,11 @@
       "computedHash": "58fe14f3bf01c2c2c1e12ab1ee369b598120d654c422660cf502abab7d17cbe3"
     },
     "workflow-creator": {
-      "source": "ugudlado/skills",
-      "sourceType": "github",
-      "skillPath": "workflow/operator/SKILL.md",
-      "computedHash": "ea472682e211ac8b40d9cea83c02cd2e7a55e19b221ca0514fa492995e8900fe"
+      "source": "git@github.com:ugudlado/skills.git",
+      "sourceUrl": "git@github.com:ugudlado/skills.git",
+      "sourceType": "git",
+      "skillPath": "workflow/workflow-creator/SKILL.md",
+      "computedHash": "b467d44b6920b7c4f68b9556b7c6b4408b818d38d2fc74122426f6098a1f0a36"
     }
   }
 }
