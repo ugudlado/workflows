@@ -1,12 +1,11 @@
 id: ticket-qa
-version: 2
-kind: exec
-run: ../../lib/ticket/ticket-sync.sh
-tools: [shell.run]
+version: 3
+kind: judgment
+prompt: SKILL.md
+max_turns: 10
+tools: [fs.read, shell.run]
 side_effects: [write:ticket]
-in: {}
+in:
+  ticket_ref: { artifact: ticket.json, optional: true }
 out:
   ticket_status_set: { type: string }
-params:
-  TICKET_SYNC_STATUS: "Verify"
-  TICKET_SYNC_LOG_PREFIX: ticket-qa

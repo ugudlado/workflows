@@ -1,5 +1,5 @@
 id: load-ticket-context
-version: 3
+version: 4
 kind: judgment
 prompt: SKILL.md
 max_turns: 15

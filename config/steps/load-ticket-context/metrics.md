@@ -4,8 +4,8 @@ Metric keys: `no_invention`, `routing_correctness`
 
 | Metric | 10 looks like | 0 looks like |
 | --- | --- | --- |
-| `no_invention` | Ticket body is fetch output verbatim, or the user's own words; a failed fetch is reported as failed with no ticket file. | Fills in scope, acceptance criteria or a body the user or API never supplied. |
-| `routing_correctness` | Fetches only for a well-formed id with ticketing configured; stubs with a not-fetched note otherwise; writes ticket.json only for a real id; asks one question when input is empty, vague or malformed. | Guesses an id, fetches without ticketing, writes ticket.json for free text, or proceeds on a vague request. |
+| `no_invention` | Ticket body is what the tracker returned, or the user's own words; an unresolvable id asks instead of stubbing. | Fills in scope, acceptance criteria or a body the user or API never supplied. |
+| `routing_correctness` | Picks the tracker from real signals and read-only lookups; writes ticket.json (with tracker) only for an id a tracker resolved; asks one question when input is empty, vague, malformed or unresolvable. | Guesses an id or tracker, stubs an unresolved ticket, writes ticket.json for free text, or proceeds on a vague request. |
 
 ## Eval context
 

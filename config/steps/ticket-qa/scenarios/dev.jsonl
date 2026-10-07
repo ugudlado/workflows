@@ -1,0 +1,1 @@
+{"id": "no-ticket", "scenario": "No ticket.json exists (free-text run).", "expect": ["Reports completed with ticket_status_set 'skipped (no ticket)'", "Calls no tracker tool and writes no comment"]}

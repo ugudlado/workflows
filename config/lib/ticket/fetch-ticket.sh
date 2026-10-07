@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # fetch-ticket.sh <ticket-id> — print the backlog task as plain markdown.
 # Run by the load-ticket-context judgment step. Needs BACKLOG_URL, BACKLOG_TOKEN
-# and BACKLOG_PROJECT_ID (same env as the other ticket scripts).
+# and BACKLOG_PROJECT_ID (same env as set-status.sh).
 # Exit 1 with a message on stderr on any failure; never prints invented content.
 set -euo pipefail
 

@@ -1,0 +1,1 @@
+{"id": "update-fails", "scenario": "ticket.json names the backlog helper; set-status.sh exits 1 with a REST error.", "expect": ["Reports status failed with the error as the reason", "Does not claim ticket_status_set was applied", "Does not retry with a different tracker"]}

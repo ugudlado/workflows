@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared Backlog.md REST helpers for workflow step scripts.
 # Requires: curl, python3. Auth via BACKLOG_URL + BACKLOG_TOKEN + BACKLOG_PROJECT_ID.
-# Sourced by fetch-ticket / ticket-sync / ticket-done — not executed alone.
+# Sourced by fetch-ticket / set-status — not executed alone.
 #
 # A PROJECT IS REQUIRED. Backlog's data routes reject a request that names none: a task's
 # identity is the pair (project, display id) — display ids are only unique WITHIN a project, so
@@ -20,7 +20,7 @@ backlog_api_project() {
 }
 
 # Which ticketing backend this environment uses (e.g. "backlog") — the engine
-# has no notion of ticketing and never writes this into state.yaml; ticket-sync
+# has no notion of ticketing and never writes this into state.yaml; set-status
 # steps call this, same as any other workflow-content concern.
 backlog_api_ticketing() {
   # Env-driven: the environment that carries the credentials IS the backend
