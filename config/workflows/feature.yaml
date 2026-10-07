@@ -1,5 +1,5 @@
 name: feature
-version: 5
+version: 6
 # Artifacts keep the pack's historical location (engine default is
 # .orchestrator/runs/<slug>/artifacts/). Plan Phase 2.1.
 artifacts_root: spec/changes/{slug}
@@ -41,4 +41,11 @@ steps:
   - mark-change-completed
   - id: open-pr # rebase, full verify, push, gh pr create with evidence
     requires: merge_token
+  # cleanup — waits for the PR to merge, then tears down. No archive commit:
+  # it would land on the merged (dead) branch and vanish with the worktree.
+  - { gate: pr-merged, show: [pr], approve_as: cleanup_token }
+  - id: remove-worktree
+    requires: cleanup_token
+  - id: ticket-done
+    requires: cleanup_token
   - workflow-report

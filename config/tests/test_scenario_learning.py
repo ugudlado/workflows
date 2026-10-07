@@ -262,7 +262,7 @@ def test_verification_oracles_match_contract_output(oracle, tmp_path, monkeypatc
     contract = yaml.safe_load((STEPS / "verify-changes" / "contract.yaml").read_text())
     artifact = contract["out"]["verification"]["artifact"]
     monkeypatch.chdir(tmp_path)
-    payload = next_step("feature-remote", config_root=CONFIG, slug="oracle-check",
+    payload = next_step("feature", config_root=CONFIG, slug="oracle-check",
                         after="verify-changes", status="abandoned")["payload"]
     assert Path(payload["out"]["verification"]).name == artifact
     if oracle == "metrics":

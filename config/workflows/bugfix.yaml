@@ -1,5 +1,5 @@
 name: bugfix
-version: 2
+version: 3
 artifacts_root: spec/changes/{slug}
 inputs:
   ticket: { type: string }
@@ -24,4 +24,16 @@ steps:
   - ticket-qa
   - learn
   - persist-learnings
+  # complete phase — same PR tail as feature (see DRIVER.md).
+  - { gate: pr-signoff, show: [design, tasks, code_review], approve_as: merge_token }
+  - mark-change-completed
+  - id: open-pr
+    requires: merge_token
+  # cleanup — waits for the PR to merge, then tears down. No archive commit:
+  # it would land on the merged (dead) branch and vanish with the worktree.
+  - { gate: pr-merged, show: [pr], approve_as: cleanup_token }
+  - id: remove-worktree
+    requires: cleanup_token
+  - id: ticket-done
+    requires: cleanup_token
   - workflow-report

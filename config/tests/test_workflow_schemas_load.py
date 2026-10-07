@@ -119,12 +119,7 @@ def _schema_step_entry(schema_name, step_id):
 _SCHEMA_TERMINAL_STEP = {
     "feature": "workflow-report",
     "bugfix": "workflow-report",
-    "patch": "workflow-report",
-    "design": "workflow-report",
-    "implement": "workflow-report",
-    "feature-remote": "workflow-report",
     "research": "workflow-report",
-    "complete": "workflow-report",
 }
 
 
@@ -136,62 +131,6 @@ def test_schema_ends_at_expected_terminal(schema_name, terminal_step):
         f"{schema_name}.yaml steps must end with {terminal_step!r}, "
         f"got tail {steps[-3:]}"
     )
-
-
-def test_complete_schema_includes_ticket_done():
-    """Complete workflow syncs the ticket to Done before the terminal report."""
-    steps = _schema_step_ids("complete")
-    assert "ticket-done" in steps
-    assert steps.index("archive-completed-change") < steps.index("ticket-done")
-
-
-def test_complete_schema_merge_teardown_order():
-    """complete.yaml: archive → merge-to-main → remove-worktree → ticket-done → workflow-report."""
-    steps = _schema_step_ids("complete")
-    order = ["archive-completed-change", "merge-to-main", "remove-worktree", "ticket-done", "workflow-report"]
-    indices = [steps.index(s) for s in order]
-    assert indices == sorted(indices), (
-        f"complete.yaml steps out of order: {list(zip(order, indices))}"
-    )
-
-
-def test_patch_schema_retry_edges():
-    """patch.yaml: implement and review carry ORC-120 retry routing.
-
-    Default-edged fields are omitted from the workflow entry:
-      - max_retries defaults to 3 in next_step
-      - on_success defaults to advance (next declaration-order step)
-    Only non-default routing survives in the schema.
-    """
-    implement = _schema_step_entry("patch", "implement")
-    review = _schema_step_entry("patch", "code-review")
-    assert isinstance(implement, dict)
-    assert implement.get("on_failure") == "implement"
-    assert "max_retries" not in implement  # engine default (3)
-    assert isinstance(review, dict)
-    assert "on_success" not in review  # advance to next step (ticket-qa)
-    assert review.get("on_failure") == "implement"
-    assert review.get("max_retries") == 8  # non-default, retained
-
-
-def test_patch_schema_skips_the_design_phase_entirely():
-    """patch.yaml goes ticket -> implement with no design phase at all.
-
-    patch is the lightweight path. It previously kept a `design` step while
-    skipping explore/diagnose, which left `design`'s `in.discovery` with no
-    upstream producer — and the design charter fails hard on a missing
-    discovery.md, so that step could never succeed. Protocol v2's wiring
-    check surfaced it. implement/SKILL.md already documents the branch that
-    derives work from ticket-context.md when design.md and tasks.yaml are
-    both absent, which is the real patch path.
-    """
-    steps = _schema_step_ids("patch")
-    design_phase_steps = {"explore", "diagnose", "design", "design-review", "ux-design"}
-    assert design_phase_steps.isdisjoint(set(steps)), (
-        f"patch.yaml must skip the design phase; found {design_phase_steps & set(steps)}"
-    )
-    assert "implement" in steps
-    assert steps.index("create-worktree") < steps.index("implement")
 
 
 _SIGNOFF_GATES = {"merge-signoff", "pr-signoff"}
@@ -207,7 +146,7 @@ def _post_merge_workflows():
 
 
 def test_post_merge_workflow_set_is_expected():
-    assert set(_post_merge_workflows()) == {"feature", "feature-remote", "complete"}
+    assert set(_post_merge_workflows()) == {"feature", "bugfix"}
 
 
 @pytest.mark.parametrize("schema_name", _post_merge_workflows())
@@ -215,12 +154,16 @@ def test_post_merge_side_effect_steps_require_merge_token(schema_name):
     steps = yaml.safe_load((_WORKFLOWS_DIR / f"{schema_name}.yaml").read_text())["steps"]
     gate_idx = next(i for i, e in enumerate(steps)
                     if isinstance(e, dict) and e.get("gate") in _SIGNOFF_GATES)
-    for entry in steps[gate_idx + 1:]:
+    tokens = set()
+    for entry in steps[gate_idx:]:
+        if isinstance(entry, dict) and "gate" in entry:
+            tokens.add(entry["approve_as"])
+            continue
         step_id = step_id_of(entry)
         contract = load_contract_for_step(step_id, _REAL_HOME)
         if contract.side_effects:
             requires = entry.get("requires") if isinstance(entry, dict) else None
-            assert requires == "merge_token", f"{schema_name}/{step_id}"
+            assert requires in tokens, f"{schema_name}/{step_id} must require a token approved above it"
 
 
 def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
@@ -240,14 +183,22 @@ def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
     assert done["step_id"] == "synthesize-findings"
 
 
-def test_feature_schema_ends_in_pr_not_merge():
+def test_feature_schema_verifies_after_code_review():
     steps = _schema_step_ids("feature")
     assert steps.index("code-review") + 1 == steps.index("verify-changes")
     assert _schema_step_entry("feature", "verify-changes")["on_failure"] == "implement"
+
+
+@pytest.mark.parametrize("schema_name", ["feature", "bugfix"])
+def test_schema_ends_in_pr_not_merge(schema_name):
+    steps = _schema_step_ids(schema_name)
     tail = steps[steps.index("mark-change-completed"):]
-    assert tail == ["mark-change-completed", "open-pr", "workflow-report"]
-    assert not {"archive-completed-change", "merge-to-main", "remove-worktree", "ticket-done"} & set(steps)
-    assert _schema_step_entry("feature", "open-pr")["requires"] == "merge_token"
+    assert tail == ["mark-change-completed", "open-pr", "pr-merged",
+                    "remove-worktree", "ticket-done", "workflow-report"]
+    assert not {"archive-completed-change", "merge-to-main"} & set(steps)
+    assert _schema_step_entry(schema_name, "open-pr")["requires"] == "merge_token"
+    for step in ("remove-worktree", "ticket-done"):
+        assert _schema_step_entry(schema_name, step)["requires"] == "cleanup_token"
 
 
 def test_open_pr_contract():

@@ -12,12 +12,14 @@ optional file is absent: absence is a no-op, not a stub or a search of other
 runs. The explicit argument is authoritative. State-environment discovery
 remains only for legacy direct script callers that omit the argument.
 
-# `feature` complete phase
+# `feature` / `bugfix` complete phase
 
-`feature` ends in a pull request, not a local merge: gate `pr-signoff` →
+Both end in a pull request, not a local merge: gate `pr-signoff` →
 `mark-change-completed` → `open-pr` (requires `merge_token`) →
-`workflow-report`. `open-pr` pushes the branch and runs `gh pr create`; it
-never merges. The worktree is kept for review fixes, `spec/changes/` is not
-archived into the branch, and `ticket-done` is not run — the ticket is done
-when the PR merges. The merge/teardown steps remain in `complete.yaml` and
-`feature-remote.yaml`.
+gate `pr-merged` → `remove-worktree` → `ticket-done` → `workflow-report`.
+`open-pr` pushes the branch and runs `gh pr create`; it never merges. The run
+then waits at `pr-merged`: the worktree stays for review fixes until the PR
+merges. Approve the gate only once the PR is merged (`gh pr view --json state`
+= `MERGED`); `remove-worktree` force-removes the worktree. `spec/changes/` is
+never archived into the branch — an archive commit would land on the merged
+branch and be lost.
