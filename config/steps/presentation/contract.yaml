@@ -1,0 +1,14 @@
+id: presentation
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 30
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in:
+  intake: { artifact: intake.json }
+  findings: { artifact: findings.md }
+  sources: { artifact: sources.md, optional: true }
+out:
+  deck: { type: string }
+  slide_count: { type: number }

@@ -1,5 +1,5 @@
 name: research
-version: 2
+version: 3
 inputs:
   ticket: { type: string }
 # Research workflow.
@@ -12,11 +12,12 @@ inputs:
 # Artifacts: the workflow owns placement — see intake-research/SKILL.md
 #
 # intake-research asks via `intake_status: await_input` until topic/audience/depth
-# are filled; then synthesize-findings / workflow-report.
+# are filled; then synthesize-findings / presentation / workflow-report.
 #
 # Web search is NOT a fixed Tavily script — synthesize-findings uses whichever
 # search/browse tools the routed agent already has (cursor-agent, etc.).
 steps:
   - intake-research
   - synthesize-findings
+  - presentation
   - workflow-report
