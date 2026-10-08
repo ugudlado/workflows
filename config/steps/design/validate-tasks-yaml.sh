@@ -20,7 +20,7 @@ if [[ ! -f "$TASKS_YAML" ]]; then
   exit 1
 fi
 
-python3 - "$TASKS_YAML" <<'PYEOF'
+"${ORCHESTRATOR_PYTHON:-python3}" - "$TASKS_YAML" <<'PYEOF'
 import sys
 import yaml
 
