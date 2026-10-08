@@ -16,8 +16,11 @@ is added.
 - Every content slide has speaker notes.
 - Nothing appears beyond `{in.findings}` and `{in.sources}`: no extra claims or URLs.
 - The theme (palette, fonts, background style) is the same on every slide.
-- Every content slide has at least one image or illustration.
+- Every content slide has at least one image, a photo wherever one was found.
 - Every sourced image has its credit in that slide's speaker notes.
+- Reopen the saved file to count slides, notes and images; do not rely on your
+  build code. If you can render slides to images, look for overflowing or
+  overlapping text; if you cannot, say so.
 
 ## Instructions
 
@@ -28,7 +31,8 @@ immediately with the missing-input reason. Do not invent content.
    `{in.sources}`.
 2. File name: the intake's topic as a kebab-case slug (lowercase, every run of
    non-alphanumerics becomes `-`, trimmed) plus `.pptx`. Write it into
-   `$ORCHESTRATOR_ARTIFACTS_DIR`, beside the `in:` artifacts.
+   `$ORCHESTRATOR_ARTIFACTS_DIR`; if that is unset, into the directory holding
+   `{in.findings}`.
 3. Theme: choose a palette, fonts and background style that suit the topic and
    audience (for example calm greens and blues for health and wellbeing), not a
    generic default template. Apply it consistently on every slide.
@@ -40,12 +44,14 @@ immediately with the missing-input reason. Do not invent content.
      notes on each carry the supporting detail and citation numbers. Each has at
      least one relevant image.
    - Slide 10, sources: the sources used, as listed in the findings/sources.
-5. Images: use only images you may legally use. Either openly licensed images
-   (public domain or Creative Commons) with the credit in that slide's speaker
-   notes, or illustrations you generate yourself (simple icons, shapes,
-   diagrams). Embed every image in the file; never hotlink. If no suitable image
-   can be obtained for a slide, draw a topic-matched illustration instead of
-   leaving it bare, and say so in the report.
+5. Images: photos first. Search Unsplash (unsplash.com, free to use under the
+   Unsplash License) for a photo matching each content slide's idea, download
+   the image file, confirm it is a real image, and embed it. Credit it in that
+   slide's speaker notes as `Photo by <name> on Unsplash, <photo page URL>`. If
+   Unsplash has nothing suitable, use another openly licensed image (public
+   domain or Creative Commons) with its credit, and only then an illustration
+   you draw yourself. Embed every image in the file; never hotlink. Never leave
+   a content slide bare, and name every slide without a photo in the report.
 6. If the findings cannot support 8 distinct content slides, or you cannot
    produce 10 valid slides, report failed with the reason. Do not ship a partial
    or padded deck.
