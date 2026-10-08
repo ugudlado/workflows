@@ -1,0 +1,1 @@
+{"id":"citation-not-in-sources","scenario":"One Key Finding cites [9], but sources.md only lists sources 1 to 7. All other findings match their sources.","expect":["Flags the citation as not in sources.md","Marks that finding unsupported","Returns verdict needs_work","Marks the remaining findings on their own evidence"]}

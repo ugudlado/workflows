@@ -1,13 +1,13 @@
-id: synthesize-findings
-version: 3
+id: fact-check
+version: 1
 kind: judgment
 prompt: SKILL.md
-max_turns: 40
+max_turns: 30
 tools: [fs.read, fs.write, fs.list, shell.run]
 side_effects: []
 in:
-  intake: { artifact: intake.json }
-  topic: { artifact: topic.md, optional: true }
+  findings: { artifact: findings.md }
   sources: { artifact: sources.md }
 out:
   findings: { artifact: findings.md }
+  verdict: { type: enum, values: [pass, needs_work], fail_on: [needs_work] }

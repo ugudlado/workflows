@@ -1,6 +1,6 @@
 ---
 name: intake-research
-description: "Normalize a research topic and gather a short completeness checklist before synthesize. Use when starting or resuming research intake."
+description: "Normalize a research topic and gather a short completeness checklist before source search. Use when starting or resuming research intake."
 user-invocable: true
 ---
 
@@ -43,7 +43,7 @@ Optional (fill if the user volunteers; do not block on them): `constraints`, `ou
    driver relays it and re-runs this step with the answer). Ask for **one**
    missing field at a time.
 5. **If checklist is full** — Write `intake.json` and `topic.md`, then report
-   `intake_status: complete`. Downstream `synthesize-findings` reads these files.
+   `intake_status: complete`. Downstream `source-search` reads these files.
 
 ### `intake.json` shape
 

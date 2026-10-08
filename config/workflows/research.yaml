@@ -1,5 +1,5 @@
 name: research
-version: 3
+version: 4
 inputs:
   ticket: { type: string }
 # Research workflow.
@@ -11,13 +11,26 @@ inputs:
 # Identity: change_id / slug / ticket_id = session_id.
 # Artifacts: the workflow owns placement — see intake-research/SKILL.md
 #
-# intake-research asks via `intake_status: await_input` until topic/audience/depth
-# are filled; then synthesize-findings / presentation / workflow-report.
+# Flow: intake-research asks via `intake_status: await_input` until topic/audience/depth
+# are filled; source-search finds and vets sources (CRAAP + lateral reading) into
+# sources.md; synthesize-findings writes findings only from those sources;
+# fact-check verifies each finding against its source and routes back to
+# synthesize-findings on needs_work (max 2 retries); storyline turns verified
+# findings into a message-first 10-slide outline; the storyline-signoff gate
+# holds until a human approves (deck_token); presentation builds the deck from
+# the storyline; workflow-report closes the run.
 #
-# Web search is NOT a fixed Tavily script — synthesize-findings uses whichever
+# Web search is NOT a fixed Tavily script — source-search uses whichever
 # search/browse tools the routed agent already has (cursor-agent, etc.).
 steps:
   - intake-research
+  - source-search
   - synthesize-findings
-  - presentation
+  - id: fact-check
+    on_failure: synthesize-findings
+    max_retries: 2
+  - storyline
+  - { gate: storyline-signoff, show: [storyline, findings], approve_as: deck_token }
+  - id: presentation
+    requires: deck_token
   - workflow-report

@@ -1,5 +1,5 @@
-id: synthesize-findings
-version: 3
+id: source-search
+version: 1
 kind: judgment
 prompt: SKILL.md
 max_turns: 40
@@ -8,6 +8,6 @@ side_effects: []
 in:
   intake: { artifact: intake.json }
   topic: { artifact: topic.md, optional: true }
-  sources: { artifact: sources.md }
 out:
-  findings: { artifact: findings.md }
+  sources: { artifact: sources.md }
+  source_count: { type: number }

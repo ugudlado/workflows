@@ -1,0 +1,1 @@
+{"id":"too-few-verified","scenario":"Only 5 Key Findings are marked verified, which cannot support 8 distinct content slides.","expect":["Reports failed with the reason","Does not pad slides with repeated or invented material","Names how many verified findings there were","Does not write a partial outline presented as complete"]}

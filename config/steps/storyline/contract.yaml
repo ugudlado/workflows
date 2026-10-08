@@ -1,0 +1,12 @@
+id: storyline
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 25
+tools: [fs.read, fs.write, fs.list]
+side_effects: []
+in:
+  intake: { artifact: intake.json }
+  findings: { artifact: findings.md }
+out:
+  storyline: { artifact: storyline.md }

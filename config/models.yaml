@@ -71,5 +71,8 @@ step_models:
   ticket-rework: fast
   ticket-done: fast
   intake-research: code
+  source-search: code
   synthesize-findings: code
+  fact-check: standard
+  storyline: standard
   presentation: code

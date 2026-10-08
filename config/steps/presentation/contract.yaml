@@ -1,5 +1,5 @@
 id: presentation
-version: 1
+version: 2
 kind: judgment
 prompt: SKILL.md
 max_turns: 30
@@ -8,6 +8,7 @@ side_effects: []
 in:
   intake: { artifact: intake.json }
   findings: { artifact: findings.md }
+  storyline: { artifact: storyline.md }
   sources: { artifact: sources.md, optional: true }
 out:
   deck: { type: string }

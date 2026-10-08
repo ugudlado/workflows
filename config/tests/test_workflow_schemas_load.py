@@ -180,7 +180,7 @@ def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
     intake.write_text("{}")
     done = next_step("research", config_root=_REAL_HOME, slug="r1", after="intake-research",
                      status="completed", out={"intake_status": "complete"})
-    assert done["step_id"] == "synthesize-findings"
+    assert done["step_id"] == "source-search"
 
 
 def test_feature_schema_verifies_after_code_review():
