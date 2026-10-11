@@ -1,0 +1,14 @@
+id: choose-deliverables
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 8
+tools: [fs.read, fs.write]
+side_effects: []
+in:
+  intake: { artifact: intake.json }
+  storyline: { artifact: storyline.md }
+out:
+  deliverables_choice: { artifact: deliverables.json, optional: true }
+  options: { type: string, optional: true }
+  choice_status: { type: enum, values: [complete, await_input] }

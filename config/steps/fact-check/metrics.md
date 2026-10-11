@@ -1,11 +1,12 @@
 # Fact Check Step Metrics
 
-Metric keys: `claim_verification`, `verdict_accuracy`
+Metric keys: `claim_verification`, `verdict_accuracy`, `counter_evidence`
 
 | Metric | 10 looks like | 0 looks like |
 | --- | --- | --- |
-| `claim_verification` | Compares every Key Finding with its cited source, re-opens the URL when extracts are thin, and records a reasoned mark per finding in a Fact check section. | Skips findings, rubber-stamps them, or marks without reading the source. |
+| `claim_verification` | Re-opens the live source (or abstract record) for every number, quote and strength-of-claim, never confirming against sources.md notes alone, and records a reasoned mark per finding in a Fact check section. | Skips findings, rubber-stamps them, or marks without reading the source. |
 | `verdict_accuracy` | needs_work for any unsupported, misstated or non-listed citation, pass otherwise, and findings left unedited. | Passes a finding the source does not state, fails a supported one, or rewrites the findings itself. |
+| `counter_evidence` | Runs one contradicting/qualifying search per finding, opens hits, marks findings contested with the counter-source URL, and lists sources checked live vs abstract-only. | Skips the search, marks contested without a source, or confirms findings only against our own notes. |
 
 ## Eval context
 

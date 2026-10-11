@@ -1,5 +1,5 @@
 id: synthesize-findings
-version: 3
+version: 4
 kind: judgment
 prompt: SKILL.md
 max_turns: 40

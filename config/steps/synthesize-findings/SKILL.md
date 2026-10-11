@@ -32,7 +32,10 @@ missing-input reason.
    - **Summary** — 2-3 sentences answering the topic directly.
    - **Key Findings** — bullet list; each bullet cites at least one `[n]`
      matching the numbered list in `sources.md`.
-   - **Practical takeaways** — only if the depth is a practical guide.
+   - **Practical takeaways** — only if the depth is a practical guide. Each
+     takeaway cites the same `[n]` sources as the Key Findings and uses only
+     numbers a verified source states; the storyline's "What you can do"
+     section is built from them.
 3. **Re-run after a fact check.** If an existing `{out.findings}` has a
    `## Fact check` section, fix or drop each flagged finding against the
    sources (do not defend an unsupported claim), then remove the old Fact check

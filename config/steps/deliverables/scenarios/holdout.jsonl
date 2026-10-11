@@ -1,0 +1,1 @@
+{"id": "format-unbuildable", "scenario": "deliverables.json chooses poster but the poster still clips text after 3 render rounds.", "expect": ["Reports failed with the reason", "Names which formats did build", "Does not ship the clipped poster as complete"]}

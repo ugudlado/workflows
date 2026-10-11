@@ -1,12 +1,13 @@
 # Storyline Step Metrics
 
-Metric keys: `message_clarity`, `evidence_discipline`, `structure_fit`
+Metric keys: `message_clarity`, `evidence_discipline`, `structure_fit`, `actionability`
 
 | Metric | 10 looks like | 0 looks like |
 | --- | --- | --- |
 | `message_clarity` | One memorable core message, a coherent SCQA frame, and action headlines that tell the whole story when read alone. | Topic labels as headlines, no single message, or an SCQA that does not lead to the answer. |
 | `evidence_discipline` | Every bullet comes from a verified finding with a citation number; unsupported findings are excluded; fails honestly when fewer than 8 slides are supported. | Uses unverified or new claims, drops citations, or pads slides to reach the count. |
-| `structure_fit` | Exactly 10 slides (title, 8 content, sources), 3-5 dash bullets and an image idea per content slide, pitched at the intake's audience and depth. | Wrong slide count, missing image ideas, dense bullets, or ignored audience. |
+| `structure_fit` | Exactly 10 sections (title, 8 content, sources) plus key figures, 3-5 dash bullets and an image idea per content slide, pitched at the intake's audience and depth. | Wrong slide count, missing image ideas, dense bullets, or ignored audience. |
+| `actionability` | A "What you can do" section of 3-5 actions drawn from the findings' Practical takeaways, each with a citation and only verified numbers, pitched at the intake's audience. | Invented advice, uncited or unverified numbers, or generic tips unrelated to the findings. |
 
 ## Eval context
 

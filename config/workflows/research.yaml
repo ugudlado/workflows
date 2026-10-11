@@ -1,5 +1,5 @@
 name: research
-version: 4
+version: 5
 inputs:
   ticket: { type: string }
 # Research workflow.
@@ -16,9 +16,11 @@ inputs:
 # sources.md; synthesize-findings writes findings only from those sources;
 # fact-check verifies each finding against its source and routes back to
 # synthesize-findings on needs_work (max 2 retries); storyline turns verified
-# findings into a message-first 10-slide outline; the storyline-signoff gate
-# holds until a human approves (deck_token); presentation builds the deck from
-# the storyline; workflow-report closes the run.
+# findings into a format-neutral 10-section content bundle; the storyline-signoff gate
+# holds until a human approves (deck_token); choose-deliverables asks which
+# formats to build (slides, poster, article, video, editable-pptx) via
+# await_input; deliverables builds each from the storyline, render-checking
+# slides and poster; workflow-report closes the run.
 #
 # Web search is NOT a fixed Tavily script — source-search uses whichever
 # search/browse tools the routed agent already has (cursor-agent, etc.).
@@ -31,6 +33,7 @@ steps:
     max_retries: 2
   - storyline
   - { gate: storyline-signoff, show: [storyline, findings], approve_as: deck_token }
-  - id: presentation
+  - choose-deliverables
+  - id: deliverables
     requires: deck_token
   - workflow-report

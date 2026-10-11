@@ -1,0 +1,1 @@
+{"id": "video-only", "scenario": "deliverables.json is {\"formats\": [\"video\"]}.", "expect": ["Builds slides first because video needs the slide PNGs", "Says slides were built only as a video input", "Reports formats honestly"]}

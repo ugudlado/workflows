@@ -1,0 +1,1 @@
+{"id": "unknown-answer", "scenario": "Re-run with User answer 'surprise me with something fun'.", "expect": ["Reports choice_status await_input again", "Ask says the answer matched no option and relists the options", "Does not write deliverables.json"]}

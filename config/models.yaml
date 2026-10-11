@@ -75,4 +75,5 @@ step_models:
   synthesize-findings: code
   fact-check: standard
   storyline: standard
-  presentation: code
+  choose-deliverables: fast
+  deliverables: code

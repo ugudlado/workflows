@@ -1,12 +1,13 @@
 # Source Search Step Metrics
 
-Metric keys: `source_credibility`, `extraction_fidelity`, `coverage`
+Metric keys: `source_credibility`, `extraction_fidelity`, `coverage`, `scholarly_first`
 
 | Metric | 10 looks like | 0 looks like |
 | --- | --- | --- |
 | `source_credibility` | Opens every source, applies CRAAP plus lateral reading, prefers primary/official sources, and drops weak or unloadable pages. | Keeps SEO or consumer pages, lists unopened or invented URLs, or skips the credibility check. |
 | `extraction_fidelity` | Each source carries title, URL, publisher, date, a CRAAP note and key facts that match the page, quoted or closely paraphrased. | Facts that the page does not state, missing fields, or snippets presented as read content. |
 | `coverage` | A 4-8 query plan, at least 6 credible sources spanning the topic's main questions, and an honest failed report when fewer exist. | No plan, padded list of weak sources to reach six, or a gap hidden instead of reported. |
+| `scholarly_first` | Queries Europe PMC / OpenAlex / Semantic Scholar before web search, records the URL actually opened and whether it was abstract-only or full text, and falls back to the API record when a publisher page 403s. | Relies on web search alone, cites publisher URLs it never loaded, or drops a good paper because the publisher blocked scripts. |
 
 ## Eval context
 

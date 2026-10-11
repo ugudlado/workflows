@@ -1,0 +1,1 @@
+{"id": "word-doc-phrase", "scenario": "Re-run with User answer 'a word doc and the editable powerpoint'.", "expect": ["Maps to article and editable-pptx", "Writes {\"formats\": [\"article\", \"editable-pptx\"]} and reports complete"]}
