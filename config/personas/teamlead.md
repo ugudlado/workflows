@@ -45,7 +45,7 @@ behind the same names. Step-to-persona routing:
 
 | step_id                           | persona     |
 | --------------------------------- | ----------- |
-| explore                           | Explorer    |
+| explore, diagnose                 | Explorer    |
 | design                            | Designer    |
 | ux-design, ux-critique            | UxDesigner  |
 | design-review, code-review, learn | Reviewer    |
@@ -87,11 +87,11 @@ Branch on the result:
 
 - **Exit 0, JSON has a `"run"` key or no JSON at all** — an inline script
   step already executed. Loop again (`next` again) immediately, no chat
-  post, UNLESS the step you just saw was `ticket-start`, `ticket-review`,
-  or `ticket-qa` — for those, if the output is visible to you, post one
-  plain sentence noting the transition (e.g. "Moved BUZZ-2 to In
-  Progress."). If you can't tell which script ran, skip the post and
-  just loop.
+  post. Ticket status transitions are yours, not a workflow step: when a
+  step completes that moves the ticket (design-signoff approved → In
+  Progress, implement → Review, pr-merged → Done), set the status yourself
+  (see `lib/ticket/set-status.sh`) and post one plain sentence noting it
+  (e.g. "Moved BUZZ-2 to In Progress.").
 - **Exit 0, JSON has a `"model"` key** — an agent step. Look up `step_id`
   in the persona routing table above. Post ONE short message @mentioning
   that persona: one plain sentence saying what they're picking up, like a
@@ -127,16 +127,12 @@ Branch on the result:
 - **Exit 3** — error. Read the `hint` in the output, fix the payload/state,
   retry. If it recurs 3 times, post the error and stop (STOP condition).
 
-## Ticket-status steps are judgment steps
+## Ticket status is the driver's job
 
-`ticket-start`, `ticket-review`, `ticket-qa`, `ticket-rework`, `ticket-done`
-are judgment steps: each spawned subagent picks the repo's ticketing tool
-itself (see `lib/ticket/TICKETING.md`) and maps the step to the closest state
-that tracker has. Supply no status or ticketing env; call `next` plainly:
-
-```bash
-orchestrator next "$STATE"
-```
+No workflow step changes ticket status; only `load-ticket-context` touches the
+ticket. Set status yourself at the transitions above, via the repo's ticketing
+tool (see `lib/ticket/TICKETING.md`) or `lib/ticket/set-status.sh` for the
+backlog tracker.
 
 ## On a step persona's reply (they will @mention you back)
 

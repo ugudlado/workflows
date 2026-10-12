@@ -183,22 +183,41 @@ def test_intake_research_asks_then_advances(tmp_path, monkeypatch):
     assert done["step_id"] == "source-search"
 
 
-def test_feature_schema_verifies_after_code_review():
+def test_code_review_owns_verification_and_no_standalone_review_steps():
+    """verify-changes/human-review/ticket-* steps were cut; code-review emits verification."""
     steps = _schema_step_ids("feature")
-    assert steps.index("code-review") + 1 == steps.index("verify-changes")
-    assert _schema_step_entry("feature", "verify-changes")["on_failure"] == "implement"
+    removed = {"verify-changes", "human-review", "ticket-start", "ticket-review",
+               "ticket-qa", "ticket-done", "ticket-rework"}
+    for name in ("feature", "bugfix"):
+        assert not removed & set(_schema_step_ids(name))
+    assert steps.index("code-review") + 1 == steps.index("pr-signoff")
+    contract = load_contract_for_step("code-review", _REAL_HOME)
+    assert contract.outputs["verification"]["artifact"] == "verify-changes.md"
+    assert contract.outputs["code_review"]["artifact"] == "code-review.md"
+
+
+def test_bugfix_diagnose_absorbs_design():
+    steps = _schema_step_ids("bugfix")
+    assert "design" not in steps and "design-review" not in steps
+    assert steps.index("diagnose") + 1 == steps.index("design-signoff")
+    assert _schema_step_entry("bugfix", "implement")["on_failure"] == "diagnose"
+    contract = load_contract_for_step("diagnose", _REAL_HOME)
+    assert contract.outputs["design"]["artifact"] == "design.md"
+    assert contract.outputs["tasks"]["artifact"] == "tasks.yaml"
+    assert contract.outputs["complexity"]["values"] == ["XS", "S", "M", "L", "XL"]
+    assert contract.outputs["discovery"]["artifact"] == "discovery.md"
 
 
 @pytest.mark.parametrize("schema_name", ["feature", "bugfix"])
 def test_schema_ends_in_pr_not_merge(schema_name):
     steps = _schema_step_ids(schema_name)
     tail = steps[steps.index("mark-change-completed"):]
-    assert tail == ["mark-change-completed", "open-pr", "pr-merged",
-                    "remove-worktree", "ticket-done", "workflow-report"]
+    assert tail == ["mark-change-completed", "open-pr", "learn", "persist-learnings",
+                    "pr-merged", "remove-worktree", "workflow-report"]
     assert not {"archive-completed-change", "merge-to-main"} & set(steps)
     assert _schema_step_entry(schema_name, "open-pr")["requires"] == "merge_token"
-    for step in ("remove-worktree", "ticket-done"):
-        assert _schema_step_entry(schema_name, step)["requires"] == "cleanup_token"
+    assert _schema_step_entry(schema_name, "persist-learnings")["requires"] == "merge_token"
+    assert _schema_step_entry(schema_name, "remove-worktree")["requires"] == "cleanup_token"
 
 
 def test_open_pr_contract():

@@ -73,6 +73,15 @@ check "implement phase contains zero run-feature-verification entries" $?
 [[ "$COUNT_UX" -ge 1 ]]
 check "implement phase contains ux-critique step" $?
 
+# Slimmed workflow: code-review carries verification, the pr-signoff gate is
+# the human review, and ticket status is the driver's job.
+for removed in verify-changes human-review ticket-start ticket-review ticket-qa ticket-done; do
+  ! grep -qE "(^|[[:space:]-])${removed}([[:space:]]|$)" "$FEATURE_YAML"
+  check "feature.yaml has no $removed step" $?
+done
+grep -q 'gate: pr-signoff, show: \[design, tasks, code_review, verification\]' "$FEATURE_YAML"
+check "pr-signoff shows the verification artifact" $?
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
