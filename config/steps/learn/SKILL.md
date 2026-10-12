@@ -51,6 +51,12 @@ Run the workflow learning pipeline for this completed change.
    absolute prompt dir for every agent step in this workflow). A learning about
    a step absent from that map has nowhere to land — skip it. `row` carries
    exactly the three keys `id`, `scenario`, `expect` and nothing else.
+   Routing: a learning about how a role skill behaves, judgeable from that
+   skill alone with no workflow protocol, targets the skill's name as `step_id`
+   (a key of `$ORCHESTRATOR_PROMPT_DIRS` when the step reads that skill). Prefix
+   its row `id` with `<role>-` and keep workflow vocabulary (`state.yaml`,
+   `COMPLETION:`, `tasks.yaml`, `ORCHESTRATOR_*`, `{out.*}`) out of the row. A
+   learning about the step's protocol targets the step id.
    The scenario recreates the situation the learning guards against, phrased
    as a fresh task with no hint of the rule; `expect` lists 3-4 observable
    staff-level behaviors the rule demands. Read only the target's train bank
