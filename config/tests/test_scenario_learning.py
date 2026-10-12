@@ -78,7 +78,7 @@ def test_legacy_and_verified_proposals(tmp_path, shape):
     if shape == "row":
         proposal["provenance"] = provenance()
     pack, accepted, skipped = accept(tmp_path, [proposal])
-    assert accepted == {pack: [row()]}
+    assert accepted == {(pack, "train"): [row()]}
     assert skipped == []
 
 
@@ -124,7 +124,7 @@ def test_reserved_situation_cannot_be_reidentified(tmp_path):
 def test_batch_and_existing_train_duplicates(tmp_path):
     proposal = {"step_id": "implement", "row": row()}
     pack, accepted, skipped = accept(tmp_path, [proposal, {"step_id": "implement", "row": row("renamed")}])
-    assert accepted == {pack: [row()]} and len(skipped) == 1
+    assert accepted == {(pack, "train"): [row()]} and len(skipped) == 1
     (pack / "scenarios" / "train.jsonl").write_text(json.dumps(row()) + "\n")
     _, accepted, skipped = accept(tmp_path, [proposal])
     assert not accepted and "duplicate scenario id" in skipped[0]["reason"]
@@ -234,7 +234,7 @@ def test_run_history_provenance_without_memory_id(tmp_path):
     proof.update(source_kind="run_history", split_origin="run_history")
     proof.pop("lesson_id")
     pack, accepted, skipped = accept(tmp_path, [{"step_id": "implement", "row": row(), "provenance": proof}])
-    assert accepted == {pack: [row()]} and skipped == []
+    assert accepted == {(pack, "train"): [row()]} and skipped == []
 
 
 def test_learning_training_oracle_matches_contract_output(tmp_path, monkeypatch):
@@ -392,3 +392,45 @@ def test_confinement_does_not_suppress_resolution_errors(tmp_path, monkeypatch):
         return self
     monkeypatch.setattr(Path, "resolve", denied)
     assert not persist.is_confined(tmp_path / "pack", [tmp_path])
+
+
+@pytest.mark.parametrize("split", ["train", "dev", "holdout"])
+def test_split_routes_to_matching_bank(tmp_path, split):
+    pack, accepted, skipped = accept(tmp_path, [{"step_id": "implement", "split": split, "row": row()}])
+    assert accepted == {(pack, split): [row()]} and skipped == []
+    persisted, _ = persist._persist(accepted, skipped, [tmp_path / "pack"])
+    assert persisted[0]["split"] == split
+    banks = {s: pack / "scenarios" / f"{s}.jsonl" for s in persist.SPLITS}
+    assert [s for s, p in banks.items() if p.exists()] == [split]
+    assert [json.loads(l) for l in banks[split].read_text().splitlines()] == [row()]
+
+
+def test_split_defaults_to_train(tmp_path):
+    pack, accepted, _ = accept(tmp_path, [{"step_id": "implement", "row": row()}])
+    persist._persist(accepted, [], [tmp_path / "pack"])
+    assert (pack / "scenarios" / "train.jsonl").exists()
+    assert not (pack / "scenarios" / "dev.jsonl").exists()
+
+
+@pytest.mark.parametrize("bad", ["test", "", None, 1, ["dev"]])
+def test_invalid_split_is_skipped(tmp_path, bad):
+    _, accepted, skipped = accept(tmp_path, [{"step_id": "implement", "split": bad, "row": row()}])
+    assert not accepted and len(skipped) == 1 and "split must be one of" in skipped[0]["reason"]
+
+
+def test_flat_form_split_is_not_part_of_scenario(tmp_path):
+    flat = {"step_id": "implement", "split": "dev", **row()}
+    assert persist.scenario_of(flat) == row()
+    pack, accepted, skipped = accept(tmp_path, [flat])
+    assert accepted == {(pack, "dev"): [row()]} and skipped == []
+
+
+def test_split_rows_share_dedup_across_banks(tmp_path):
+    proposals = [
+        {"step_id": "implement", "split": "dev", "row": row()},
+        {"step_id": "implement", "split": "holdout", "row": row("other")},
+        {"step_id": "implement", "split": "holdout", "row": row("third", "A different situation entirely.")},
+    ]
+    pack, accepted, skipped = accept(tmp_path, proposals)
+    assert accepted == {(pack, "dev"): [row()], (pack, "holdout"): [row("third", "A different situation entirely.")]}
+    assert len(skipped) == 1 and "duplicate scenario content" in skipped[0]["reason"]

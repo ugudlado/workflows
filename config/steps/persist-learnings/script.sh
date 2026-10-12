@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Appends validated proposed-scenarios rows to each target pack's
-# scenarios/train.jsonl and commits them. Learning is best-effort: this step
+# scenarios/<split>.jsonl (default train) and commits them. Learning is best-effort: this step
 # never fails the run.
 set -euo pipefail
 : "${ORCHESTRATOR_STEP_DIR:?orchestrator: ORCHESTRATOR_STEP_DIR required}"

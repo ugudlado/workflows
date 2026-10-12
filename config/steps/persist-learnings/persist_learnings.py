@@ -3,7 +3,10 @@
 learn is an LLM step, so it stages candidate rows in
 the contract's ``proposed_scenarios`` artifact instead of editing prompt packs
 directly. This step is the deterministic gate between that staging file and
-each pack's ``scenarios/train.jsonl``.
+each pack's ``scenarios/<split>.jsonl``. A staged row may carry an optional
+top-level ``"split"`` ("train" | "dev" | "holdout", default "train") beside
+``step_id`` and ``row``; learn stages train-only rows, while a supervised lead
+may stage dev/holdout rows through the same gate.
 
 The gate exists because a bad row poisons a whole pack, not just itself:
 ``prompt_optimizer.run._load_scenario_banks`` raises on the first malformed
@@ -132,13 +135,14 @@ def scenario_of(raw: dict[str, Any]) -> dict[str, Any]:
 
     Canonical shape is ``{"step_id": ..., "row": {...}}``; ``scenario`` as the
     wrapper key and the flat form (the three keys inline beside step_id) are
-    accepted too, because learn writes this file from a prompt.
+    accepted too, because learn writes this file from a prompt. ``split`` is
+    routing metadata, never part of the scenario.
     """
     for key in ("row", "scenario"):
         value = raw.get(key)
         if isinstance(value, dict):
             return value
-    return {k: v for k, v in raw.items() if k != "step_id"}
+    return {k: v for k, v in raw.items() if k not in ("step_id", "split")}
 
 
 def validate_scenario(scenario: dict[str, Any]) -> None:
@@ -357,7 +361,7 @@ def is_dirty(root: Path, target: Path) -> bool:
 
 
 def commit_group(root: Path, paths: list[Path], change_id: str) -> dict[str, Any]:
-    """Commit the given train.jsonl paths in one repo. Never switches branch."""
+    """Commit the given scenario bank paths in one repo. Never switches branch."""
     record: dict[str, Any] = {"git_root": str(root), "paths": [str(p) for p in paths]}
     args = [str(p) for p in paths]
     add = _git(root, "add", "--", *args)
@@ -389,8 +393,8 @@ def _accept_rows(
     sources: list[Path],
     targets: dict[str, str],
     roots: list[Path],
-) -> tuple[dict[Path, list[dict[str, Any]]], list[dict[str, Any]]]:
-    """Split staged rows into per-pack accepted scenarios and skip records."""
+) -> tuple[dict[tuple[Path, str], list[dict[str, Any]]], list[dict[str, Any]]]:
+    """Split staged rows into per-(pack, split) accepted scenarios and skip records."""
     accepted: dict[Path, list[dict[str, Any]]] = {}
     skipped: list[dict[str, Any]] = []
     known_ids: dict[Path, set[str]] = {}
@@ -436,6 +440,14 @@ def _accept_rows(
                 })
                 continue
 
+            split = raw.get("split", "train")
+            if split not in SPLITS:
+                skipped.append({
+                    **where,
+                    "reason": f"split must be one of {', '.join(SPLITS)}, got {split!r}",
+                })
+                continue
+
             scenario = scenario_of(raw)
             try:
                 validate_scenario(scenario)
@@ -465,13 +477,13 @@ def _accept_rows(
                 continue
             seen.add(scenario_id)
             content.add(signature)
-            accepted.setdefault(pack, []).append(scenario)
+            accepted.setdefault((pack, split), []).append(scenario)
 
     return accepted, skipped
 
 
 def _persist(
-    accepted: dict[Path, list[dict[str, Any]]],
+    accepted: dict[tuple[Path, str], list[dict[str, Any]]],
     skipped: list[dict[str, Any]],
     roots: list[Path],
 ) -> tuple[list[dict[str, Any]], dict[Path | None, list[Path]]]:
@@ -479,9 +491,9 @@ def _persist(
     persisted: list[dict[str, Any]] = []
     by_repo: dict[Path | None, list[Path]] = {}
 
-    for pack in sorted(accepted, key=str):
-        scenarios = accepted[pack]
-        target = pack / "scenarios" / "train.jsonl"
+    for pack, split in sorted(accepted, key=lambda k: (str(k[0]), k[1])):
+        scenarios = accepted[(pack, split)]
+        target = pack / "scenarios" / f"{split}.jsonl"
         root = git_root(pack)
         if root is not None and is_dirty(root, target):
             for scenario in scenarios:
@@ -492,7 +504,7 @@ def _persist(
             continue
         try:
             # Recheck the actual write boundary, not just the accepted pack.
-            # A train-file link could redirect into dev/holdout even in-root.
+            # A split-file link could redirect into another bank even in-root.
             if target.is_symlink() or not is_confined(target, roots):
                 raise RowError(f"unsafe append target (symlink or outside allowed roots): {target}")
             append_rows(target, scenarios)
@@ -503,6 +515,7 @@ def _persist(
         persisted.append({
             "pack": str(pack),
             "path": str(target),
+            "split": split,
             "ids": [scenario["id"] for scenario in scenarios],
         })
         by_repo.setdefault(root, []).append(target)
