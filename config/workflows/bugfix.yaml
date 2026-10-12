@@ -1,38 +1,35 @@
 name: bugfix
-version: 4
+version: 5
 inputs:
   ticket: { type: string }
 steps:
   - check-rerun
   - create-worktree
   - load-ticket-context
+  # diagnose also writes design.md + tasks.yaml + complexity (no separate
+  # design / design-review steps); design-signoff is the only plan review.
   - diagnose
-  - design
-  - id: design-review
-    on_failure: design
   # Signoff before anything writes outside the run. Engine side is Phase 3.1.
   - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
-  - ticket-start
   - id: implement
-    on_failure: design
+    on_failure: diagnose
     requires: impl_token
-  - ticket-review
   - id: code-review
     on_failure: implement
     max_retries: 8
-  - ticket-qa
-  - learn
-  - persist-learnings
-  # complete phase — same PR tail as feature (see DRIVER.md).
+  # complete phase — same PR tail as feature (see DRIVER.md). Ticket status
+  # changes are the driver's job, not workflow steps.
   - { gate: pr-signoff, show: [design, tasks, code_review], approve_as: merge_token }
   - mark-change-completed
   - id: open-pr
+    requires: merge_token
+  # learn runs after the PR is open so it is off the critical path to review.
+  - learn
+  - id: persist-learnings # writes to git: needs the pr-signoff approval
     requires: merge_token
   # cleanup — waits for the PR to merge, then tears down. No archive commit:
   # it would land on the merged (dead) branch and vanish with the worktree.
   - { gate: pr-merged, show: [pr], approve_as: cleanup_token }
   - id: remove-worktree
-    requires: cleanup_token
-  - id: ticket-done
     requires: cleanup_token
   - workflow-report

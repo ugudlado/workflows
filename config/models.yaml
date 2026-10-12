@@ -60,16 +60,9 @@ step_models:
   learn: standard
   design-review: standard
   ux-critique: standard
-  verify-changes: standard
   open-pr: standard
-  human-review: standard
   implement: code
   load-ticket-context: fast
-  ticket-start: fast
-  ticket-review: fast
-  ticket-qa: fast
-  ticket-rework: fast
-  ticket-done: fast
   intake-research: code
   source-search: code
   synthesize-findings: code

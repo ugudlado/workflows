@@ -46,10 +46,8 @@ def accept(tmp_path, proposals, reserved=None):
 
 
 @pytest.mark.parametrize("step,keys", [
-    ("human-review", ["decision_quality", "rework_routing"]),
     ("intake-research", ["intake_completeness", "resume_integrity"]),
     ("synthesize-findings", ["source_integrity", "audience_fit"]),
-    ("verify-changes", ["criterion_coverage", "verification_evidence"]),
 ])
 def test_initial_banks(step, keys):
     metrics = (STEPS / step / "metrics.md").read_text()
@@ -66,6 +64,20 @@ def test_initial_banks(step, keys):
             assert item["scenario"] not in situations
             ids.add(item["id"])
             situations.add(item["scenario"])
+
+
+def test_code_review_absorbs_verify_changes_metrics_and_scenarios():
+    """verify-changes was merged into code-review: its metric and scenarios live there now."""
+    metrics = (STEPS / "code-review" / "metrics.md").read_text()
+    assert "Metric keys: `verification_evidence`, `gate_integrity`, `criterion_coverage`" in metrics
+    ids = set()
+    for split in ("train", "dev", "holdout"):
+        for line in (STEPS / "code-review" / "scenarios" / f"{split}.jsonl").read_text().splitlines():
+            item = persist.parse_line(line)
+            persist.validate_scenario(item)
+            assert item["id"] not in ids
+            ids.add(item["id"])
+    assert {"branch-not-delivered", "one-criterion-unmet", "build-fails-after-done-claim"} <= ids
 
 
 @pytest.mark.parametrize("shape", ["row", "scenario", "flat"])
@@ -259,16 +271,16 @@ def test_learning_training_oracle_matches_contract_output(tmp_path, monkeypatch)
 def test_verification_oracles_match_contract_output(oracle, tmp_path, monkeypatch):
     from orchestrator_next.nextstep import next_step
 
-    contract = yaml.safe_load((STEPS / "verify-changes" / "contract.yaml").read_text())
+    contract = yaml.safe_load((STEPS / "code-review" / "contract.yaml").read_text())
     artifact = contract["out"]["verification"]["artifact"]
     monkeypatch.chdir(tmp_path)
     payload = next_step("feature", config_root=CONFIG, slug="oracle-check",
-                        after="verify-changes", status="abandoned")["payload"]
+                        after="code-review", status="abandoned")["payload"]
     assert Path(payload["out"]["verification"]).name == artifact
     if oracle == "metrics":
-        text = (STEPS / "verify-changes" / "metrics.md").read_text()
+        text = (STEPS / "code-review" / "metrics.md").read_text()
     else:
-        cases = [json.loads(line) for line in (STEPS / "verify-changes" / "scenarios" / "dev.jsonl").read_text().splitlines()]
+        cases = [json.loads(line) for line in (STEPS / "code-review" / "scenarios" / "dev.jsonl").read_text().splitlines()]
         case = next(item for item in cases if item["id"] == oracle)
         text = case["expect"][3]
     assert f"{{out.verification}} artifact (currently {artifact})" in text.replace("`", "")

@@ -1,12 +1,14 @@
 ---
 name: code-reviewer
-description: "Code review (implementation quality) against the project quality bar. Use when reviewing implementation quality, scoring a phase, or gating merge readiness."
+description: "Code review (implementation quality) and requirement verification against the project quality bar. Use when reviewing implementation quality, scoring a phase, verifying acceptance criteria on the branch, or gating merge readiness."
 user-invocable: true
 ---
 
 # Run Code Review
 
-**Intent:** Run implementation code-review checks and decide pass/retry.
+**Intent:** Run implementation code-review checks, verify the requirement is
+met on the branch with cited evidence, and decide pass/retry. One verdict
+covers both.
 
 ## Capability
 
@@ -81,7 +83,19 @@ not use an `extends` prompt.
      - Do not trust earlier phase counts.
      - Record fresh search result as evidence.
    - If any AC fails: treat as a critical finding in spec_compliance dimension.
-7. Write the full human-readable report to {out.code_review}.
+7. Requirement verification (replaces the old separate verify-changes step):
+   - Fetch the branch; if it does not exist or has no commits beyond base,
+     that is a critical spec_compliance finding (no changes delivered).
+   - Checklist: acceptance criteria from `{in.design}`, else tasks from
+     `{in.tasks}`, else the ticket's stated outcome (`{in.ticket}`). Judge the
+     changes on the branch only, never completion claims or who delivered them.
+   - Write an evidence table to `{out.verification}`: one row per item with the
+     concrete diff hunk (file + what it does) or test that satisfies it, or
+     "no evidence". Quote the real output of the verify commands from step 2
+     (or state their absence). A partially met requirement is a critical
+     spec_compliance finding with the unmet items listed — never average it away.
+   - Steps 6 and 7 share evidence: do not re-run what step 6 already ran.
+7b. Write the full human-readable report to {out.code_review}.
 8. If overall >= 8 (min_code_review_score, step-owned) and no critical
    findings: PASS — report `verdict: pass`.
 9. If FAIL:
@@ -129,7 +143,8 @@ not use an `extends` prompt.
 
 ## Verify
 
-- Code review report written to {out.code_review}
+- Code review report written to {out.code_review}; evidence table written to {out.verification} (every acceptance criterion mapped to a cited diff hunk or test, unmet items listed explicitly)
+- Pass requires every checklist item to have evidence and the project checks to pass
 - When code_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing code-review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
 - Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed. No other combination is valid.
 - When code_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
