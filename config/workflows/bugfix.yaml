@@ -21,8 +21,6 @@ steps:
     on_failure: implement
     max_retries: 8
   - ticket-qa
-  - learn
-  - persist-learnings
   # complete phase — same PR tail as feature (see DRIVER.md).
   - { gate: pr-signoff, show: [design, tasks, code_review], approve_as: merge_token }
   - mark-change-completed

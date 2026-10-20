@@ -30,6 +30,9 @@ commits permitted fixes, and maps the verdict to workflow status. Do not use an
    `*.astro`, or paths under `components/`, `pages/`, `views/`, `layouts/`,
    `templates/`. Also treat an existing `ux-prototype.html` as UI surface.
 
+   A quick change (`triage.md` in the run's artifacts says `# Triage: quick`)
+   has no prototype and no UI flow by definition: treat it as no UI surface.
+
    If NO UI surface → write `review:` with `verdict: skipped`,
    `guidance: "No UI changes — skipped."`, log once, return completed.
 

@@ -243,7 +243,7 @@ def test_learning_training_oracle_matches_contract_output(tmp_path, monkeypatch)
     contract = yaml.safe_load((STEPS / "learn" / "contract.yaml").read_text())
     output = "proposed_scenarios"
     monkeypatch.chdir(tmp_path)
-    payload = next_step("feature", config_root=CONFIG, slug="oracle-check",
+    payload = next_step("learn", config_root=CONFIG, slug="oracle-check",
                         after="learn", status="abandoned")["payload"]
     assert Path(payload["out"][output]).name == contract["out"][output]["artifact"]
     cases = [json.loads(line) for line in (STEPS / "learn" / "scenarios" / "train.jsonl").read_text().splitlines()]
@@ -282,6 +282,7 @@ def test_learning_adapter_memory_safety_and_artifact_binding():
     assert "current" in text and "verification" in text
     assert "Do not read dev/holdout" in text
     assert "{out.proposed_scenarios}" in text
+    assert "{in.runs}" in text and "source run" in text
     driver = (CONFIG / "DRIVER.md").read_text()
     assert "payload.in.proposed_scenarios" in driver and "--proposed-scenarios" in driver
 
@@ -392,3 +393,62 @@ def test_confinement_does_not_suppress_resolution_errors(tmp_path, monkeypatch):
         return self
     monkeypatch.setattr(Path, "resolve", denied)
     assert not persist.is_confined(tmp_path / "pack", [tmp_path])
+
+
+def _pack_with_charters(tmp_path):
+    """A pack with a steps/ layout and a skills/-style sibling root."""
+    root = tmp_path / "pack"
+    for rel in ("steps/implement", "steps/exec-only"):
+        (root / rel).mkdir(parents=True)
+    (root / "steps/implement/SKILL.md").write_text("charter\n")
+    (tmp_path / "skills" / "designer").mkdir(parents=True)
+    (tmp_path / "skills" / "designer" / "SKILL.md").write_text("charter\n")
+    return root, [root, tmp_path / "skills"]
+
+
+def test_charter_fallback_when_step_not_in_prompt_dirs(tmp_path):
+    root, roots = _pack_with_charters(tmp_path)
+    source = tmp_path / "proposals.jsonl"
+    source.write_text("".join(json.dumps(p) + "\n" for p in [
+        {"step_id": "implement", "row": row()},                      # <root>/steps/<id>
+        {"step_id": "designer", "row": row("other", "A design misses a rollback path.")},  # <root>/<id>
+        {"step_id": "exec-only", "row": row("third", "No charter for this one.")},
+        {"step_id": "../pack/steps/implement", "row": row("fourth", "Traversal attempt.")},
+        {"step_id": "missing", "row": row("fifth", "Unknown step.")},
+    ]))
+    slugs: dict = {}
+    accepted, skipped = persist._accept_rows([source], {}, roots, slugs)
+    assert accepted == {
+        root / "steps/implement": [row()],
+        tmp_path / "skills/designer": [row("other", "A design misses a rollback path.")],
+    }
+    assert len(skipped) == 3
+    assert all("no charter" in s["reason"] for s in skipped)
+
+
+def test_charter_fallback_stays_confined(tmp_path):
+    root, roots = _pack_with_charters(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "SKILL.md").write_text("charter\n")
+    (root / "steps" / "escape").symlink_to(outside, target_is_directory=True)
+    assert persist.resolve_charter_dir("escape", roots) is None
+    assert persist.resolve_charter_dir("implement", roots) == root / "steps/implement"
+    assert persist.resolve_charter_dir("", roots) is None
+
+
+def test_fallback_end_to_end_commit_names_source_run(tmp_path, monkeypatch, capsys):
+    (tmp_path / ".git").write_text("invalid fixture Git fence\n")
+    root, _ = _pack_with_charters(tmp_path)
+    monkeypatch.setenv("ORCHESTRATOR_PROMPT_DIRS", json.dumps({"learn": str(root / "steps/learn")}))
+    monkeypatch.setenv("ORCHESTRATOR_PROMPT_PATH", str(root))
+    proof = {**provenance(), "source_kind": "run_history", "split_origin": "run_history",
+             "source_runs": ["orc-7", "bad slug; rm"]}
+    proof.pop("lesson_id")
+    source = tmp_path / "proposals.jsonl"
+    source.write_text(json.dumps({"step_id": "implement", "row": row(), "provenance": proof}) + "\n")
+    assert persist.run(source) == 0
+    result = json.loads(capsys.readouterr().out)["outputs"]["persist_learnings"]
+    assert result["persisted"][0]["ids"] == ["fresh"]
+    assert json.loads((root / "steps/implement/scenarios/train.jsonl").read_text()) == row()
+    assert persist.source_run_slugs({"provenance": proof}) == ["orc-7"]

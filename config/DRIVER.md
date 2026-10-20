@@ -1,8 +1,10 @@
 # Scenario-learning artifact handoff
 
-For `learn`, substitute `{out.proposed_scenarios}` with
-`payload.out.proposed_scenarios`. Write proposals only there, not beside the
-driver's state file unless those paths happen to coincide.
+Learning runs in its own nightly `learn` workflow (see below), not inside
+dev/feature/bugfix. For `learn`, substitute `{out.proposed_scenarios}` with
+`payload.out.proposed_scenarios` and `{in.runs}` with `payload.in.runs`. Write
+proposals only to the out path, not beside the driver's state file unless those
+paths happen to coincide.
 
 Artifacts live outside the worktree. The driver must pass
 `--artifacts-dir <abs run dir>/artifacts` on every `next` call: the pack
@@ -11,12 +13,45 @@ and no workflow declares `artifacts_root`. Artifacts go to `payload.out` /
 `$ORCHESTRATOR_ARTIFACTS_DIR`; code goes to `$WORKTREE_PATH`. Never derive one
 from the other.
 
-For `persist-learnings`, run `payload.run_path` with argv
+For `persist-learnings` (a step of the `learn` workflow), run
+`payload.run_path` with argv
 `["--proposed-scenarios", payload.in.proposed_scenarios]` and the normal
 `payload.env`. The path is absolute, so cwd is irrelevant. Pass it even when the
 optional file is absent: absence is a no-op, not a stub or a search of other
 runs. The explicit argument is authoritative. State-environment discovery
 remains only for legacy direct script callers that omit the argument.
+
+A proposal's `step_id` may name any step in the pack that has a charter
+(`steps/<id>/SKILL.md`); `persist-learnings` falls back to the pack's prompt
+roots (`ORCHESTRATOR_PROMPT_PATH`) when the id is not in
+`ORCHESTRATOR_PROMPT_DIRS`, and the append stays confined to those roots.
+
+# Nightly `learn` workflow
+
+`dev`, `feature` and `bugfix` no longer learn inline. A scheduler on the runner
+VM runs the `learn` workflow once a night (it has no ticket, worktree or
+gates): `collect-runs` → `learn` → `persist-learnings` → `mark-learned`.
+
+- **Runs root**: `ORCHESTRATOR_RUNS_DIR` if set, else
+  `Path(STATE_YAML_PATH).parent.parent` (runs live at
+  `.orchestrator/runs/<slug>/state.yaml`). Pass the env on the `next` calls'
+  step environment, or give the learn run a `STATE_YAML_PATH` inside the same
+  runs root.
+- `collect-runs`: run `payload.run_path` with argv
+  `["--runs-out", payload.out.runs]`. It lists runs whose `step_history` holds a
+  completed `workflow-report` (the same "finished" fact as `check-rerun`), that
+  have no `learned.json` marker in their run dir, and that are not the current
+  learn run or any run of the `learn` workflow. It writes `runs.json`
+  (`[{slug, run_dir, state_path, artifacts_dir, finished_at}]`) and outputs
+  `run_count`. Zero runs is success; `learn` then reports `learn_skipped`.
+- `learn` reads every run listed in `payload.in.runs` and looks for patterns
+  that repeat across runs.
+- `mark-learned`: run `payload.run_path` with argv
+  `["--runs", payload.in.runs]` (absent or empty is a no-op; optionally
+  `--scenarios-appended N`, the `persist-learnings` count). It writes
+  `<run_dir>/learned.json` (`{learned_at, learn_run, scenarios_appended?}`) for
+  each listed run and outputs `marked`. Idempotent: an existing marker is never
+  rewritten. To make a run eligible again, delete its `learned.json`.
 
 # `feature` / `bugfix` complete phase
 

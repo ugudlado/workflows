@@ -1,0 +1,10 @@
+id: mark-learned
+version: 1
+kind: exec
+run: script.sh
+tools: [fs.read, fs.write, fs.list]
+side_effects: []
+in:
+  runs: { artifact: runs.json, optional: true }
+out:
+  marked: { type: number }

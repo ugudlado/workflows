@@ -1,0 +1,23 @@
+name: learn
+version: 1
+inputs: {}
+# Nightly learning pass. dev/feature/bugfix no longer learn inline: they end
+# at their own report and leave the retro to this workflow, which a scheduler
+# on the runner VM runs once a night over every finished run that has not been
+# learned from yet. One learn run therefore sees many runs at once and can
+# spot patterns that repeat across them, which a single-run retro cannot.
+#
+#   collect-runs        find finished runs under the runs root with no
+#                       learned.json marker (runs.json; zero runs is success)
+#   learn               judgment: read those runs' state + artifacts, propose
+#                       eval scenarios for any step in the pack
+#   persist-learnings   validate, append and commit the proposals
+#   mark-learned        write <run_dir>/learned.json for each collected run so
+#                       the next night skips them
+#
+# Not a ticket workflow: no worktree, no ticket, no gates. See DRIVER.md.
+steps:
+  - collect-runs
+  - learn
+  - persist-learnings
+  - mark-learned
