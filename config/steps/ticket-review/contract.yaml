@@ -1,9 +1,9 @@
 id: ticket-review
-version: 3
+version: 4
 kind: judgment
 prompt: SKILL.md
 max_turns: 10
-tools: [fs.read, shell.run]
+tools: [fs.read, shell.run, ticket.read, ticket.write]
 side_effects: [write:ticket]
 in:
   ticket_ref: { artifact: ticket.json, optional: true }

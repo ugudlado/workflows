@@ -28,6 +28,16 @@ and named result to workflow artifacts, and emit the orchestrator completion
 protocol. They do not use `extends`. Top-level `skills/` only mirrors adapters
 for tooling that expects a `skills/` tree.
 
+## Tool bindings
+
+Steps name tracker/forge/chat capabilities as roles (`ticket.read`,
+`ticket.write`, `forge.pr`), not products. `config/bindings.yaml` is the pack
+default (empty: detect at runtime). A team says which product fills a role by
+passing its own file with `--bindings` (see `config/bindings.example.yaml`);
+later layers win per role. The engine hands each step its bindings in
+`payload.bindings` and `ORCHESTRATOR_BINDINGS`; a bound role is used as is, an
+unbound one falls back to detection.
+
 ## Install into a consumer repo
 
 ```bash
