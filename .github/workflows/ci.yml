@@ -8,7 +8,7 @@ env:
   # Pin the engine ref this pack is validated against. Bump when the pack
   # adopts a new protocol-v2 phase from orchestrator.
   # TODO: set back to main once the engine PR (routes:/checks:) merges.
-  ORCHESTRATOR_REF: claude/project-thread-8vg1n0
+  ORCHESTRATOR_REF: claude/project-thread-8vg1n0-bindings
 
 jobs:
   validate:

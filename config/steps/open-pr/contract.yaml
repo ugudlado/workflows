@@ -1,9 +1,9 @@
 id: open-pr
-version: 1
+version: 2
 kind: judgment
 prompt: SKILL.md
 max_turns: 80
-tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch, git.commit, git.push, net.fetch]
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch, git.commit, git.push, net.fetch, forge.pr]
 side_effects: [write:remote]
 in:
   design: { artifact: design.md, optional: true }

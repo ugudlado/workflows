@@ -1,9 +1,9 @@
 id: load-ticket-context
-version: 4
+version: 5
 kind: judgment
 prompt: SKILL.md
 max_turns: 15
-tools: [fs.read, fs.write, shell.run]
+tools: [fs.read, fs.write, shell.run, ticket.read]
 side_effects: []
 in: {}
 out:

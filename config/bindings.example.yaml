@@ -1,0 +1,7 @@
+# Example team bindings. Copy, edit, and pass with `--bindings PATH`.
+# Each role needs `provider` and `via` (mcp | cli | script); other keys pass
+# through verbatim to the step.
+roles:
+  ticket: { provider: linear, via: mcp, server: linear }
+  forge: { provider: github, via: cli, command: gh }
+  chat: { provider: slack, via: mcp, server: slack }

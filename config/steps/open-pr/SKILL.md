@@ -25,6 +25,16 @@ You publish the run branch as one or more PRs and own the result.
   artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR` contents) or screenshots to the feature branch.
 - Failing checks or rebase conflicts mean `failed` and no PR.
 
+## Forge binding
+
+If `ORCHESTRATOR_BINDINGS` (JSON, from the step payload) has a non-null `forge`
+binding, use exactly that tool (its `provider`, `via`, and `server` or
+`command`) for every forge operation below, in place of `gh`. Never fall back
+to detecting another forge when a binding is set: if the bound tool is
+unavailable or unauthenticated, say so and stop `failed`. A null or absent
+`forge` binding keeps the behaviour below (`gh`, or what the repo's conventions
+name).
+
 ## Steps
 
 1. Read the repo's PR conventions. Discover its full verification command

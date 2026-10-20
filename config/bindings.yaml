@@ -1,0 +1,10 @@
+# Pack default tool bindings.
+#
+# An empty `roles` map means no role is bound: steps that name a role tool
+# (ticket.*, forge.*, chat.*) detect the product at runtime.
+#
+# Teams layer their own file with `--bindings PATH` (repeatable). Precedence,
+# lowest to highest: this file, then each --bindings file in order (team, repo,
+# run). The highest layer naming a role owns it wholesale; fields do not merge.
+# See bindings.example.yaml for the shape.
+roles: {}
