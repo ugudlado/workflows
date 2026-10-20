@@ -10,7 +10,7 @@ Formerly published as `workflow-config`; the GitHub repo is now
 
 ```text
 config/
-  workflows/           # feature.yaml, bugfix.yaml, …
+  workflows/           # feature.yaml, bugfix.yaml, dev.yaml, …
   steps/<id>/
     contract.yaml      # prompt: SKILL.md  |  run: script.sh
     SKILL.md           # agent steps only: thin wrapper over an installed role skill

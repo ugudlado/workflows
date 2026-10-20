@@ -68,3 +68,14 @@ If the surrounding task is a bug diagnosis (ticket + reproduce + trace + documen
   repository-layer bypasses (bulk jobs, migrations, admin scripts).
 - Hidden gaps: presenting an incomplete scan as complete. Always name what you
   did not check and the search that would close it.
+
+## Fix scope (optional)
+
+After the root cause is confirmed, report `fix_scope`:
+
+- `hotfix`: only for a small, low-risk, urgent fix: a few lines, no schema or
+  API change, a clear repro, and a ticket that signals urgency.
+- `standard`: everything else, and whenever in doubt.
+
+This is a routing hint only; still do not propose the fix itself. Workflows
+that do not route on it ignore it.

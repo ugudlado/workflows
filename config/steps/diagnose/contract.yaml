@@ -1,5 +1,5 @@
 id: diagnose
-version: 5
+version: 6
 kind: judgment
 prompt: SKILL.md
 max_turns: 30
@@ -9,3 +9,4 @@ in:
   ticket: { artifact: ticket-context.md, optional: true }
 out:
   discovery: { artifact: discovery.md }
+  fix_scope: { type: enum, values: [standard, hotfix], optional: true }
