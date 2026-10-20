@@ -292,6 +292,19 @@ def prompt_roots() -> list[Path]:
     return [Path(p) for p in raw.split(os.pathsep) if p]
 
 
+def _is_judgment_step(step_dir: Path) -> bool:
+    """Only a step whose contract says `kind: judgment` is a learnable charter.
+
+    Keeps the fallback from landing scenarios on exec steps or on stray dirs
+    that merely hold a SKILL.md.
+    """
+    try:
+        text = (step_dir / "contract.yaml").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return any(line.split("#", 1)[0].strip() == "kind: judgment" for line in text.splitlines())
+
+
 def resolve_charter_dir(step_id: str, roots: list[Path]) -> Path | None:
     """Find a step's charter dir in the pack when the prompt-dir map lacks it.
 
@@ -308,7 +321,11 @@ def resolve_charter_dir(step_id: str, roots: list[Path]) -> Path | None:
         return None
     for root in roots:
         for candidate in (root / step_id, root / "steps" / step_id):
-            if (candidate / "SKILL.md").is_file() and is_confined(candidate, roots):
+            if (
+                (candidate / "SKILL.md").is_file()
+                and _is_judgment_step(candidate)
+                and is_confined(candidate, roots)
+            ):
                 return candidate
     return None
 

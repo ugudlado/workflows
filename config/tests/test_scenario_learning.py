@@ -401,8 +401,13 @@ def _pack_with_charters(tmp_path):
     for rel in ("steps/implement", "steps/exec-only"):
         (root / rel).mkdir(parents=True)
     (root / "steps/implement/SKILL.md").write_text("charter\n")
+    (root / "steps/implement/contract.yaml").write_text("id: implement\nkind: judgment\n")
+    # An exec step with a stray SKILL.md is still not a learnable charter.
+    (root / "steps/exec-only/SKILL.md").write_text("not a charter\n")
+    (root / "steps/exec-only/contract.yaml").write_text("id: exec-only\nkind: exec\n")
     (tmp_path / "skills" / "designer").mkdir(parents=True)
     (tmp_path / "skills" / "designer" / "SKILL.md").write_text("charter\n")
+    (tmp_path / "skills" / "designer" / "contract.yaml").write_text("id: designer\nkind: judgment\n")
     return root, [root, tmp_path / "skills"]
 
 
@@ -431,6 +436,7 @@ def test_charter_fallback_stays_confined(tmp_path):
     outside = tmp_path / "outside"
     outside.mkdir()
     (outside / "SKILL.md").write_text("charter\n")
+    (outside / "contract.yaml").write_text("kind: judgment\n")
     (root / "steps" / "escape").symlink_to(outside, target_is_directory=True)
     assert persist.resolve_charter_dir("escape", roots) is None
     assert persist.resolve_charter_dir("implement", roots) == root / "steps/implement"
