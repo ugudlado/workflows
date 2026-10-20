@@ -119,6 +119,7 @@ def _schema_step_entry(schema_name, step_id):
 _SCHEMA_TERMINAL_STEP = {
     "feature": "workflow-report",
     "bugfix": "workflow-report",
+    "dev": "workflow-report",
     "research": "workflow-report",
 }
 
@@ -146,7 +147,7 @@ def _post_merge_workflows():
 
 
 def test_post_merge_workflow_set_is_expected():
-    assert set(_post_merge_workflows()) == {"feature", "bugfix"}
+    assert set(_post_merge_workflows()) == {"feature", "bugfix", "dev"}
 
 
 @pytest.mark.parametrize("schema_name", _post_merge_workflows())

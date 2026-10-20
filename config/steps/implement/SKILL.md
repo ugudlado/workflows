@@ -27,6 +27,9 @@ protocol. Do not use an `extends` prompt.
 2. **Both `design.md` and `tasks.yaml` absent (patch schema)? Do NOT block or stop** —
    Read `developer/reference/edge-cases.md` before
    proceeding; it tells you to derive work from `ticket-context.md` instead.
+   A hotfix run has no design: work from `{in.discovery}` (the diagnosis,
+   root cause at `file:line`) plus the ticket, keep the change minimal, and
+   write a `tasks.yaml` for what you do.
    **Only one of the two present** (design.md without tasks.yaml, or vice
    versa) is not the patch case — that's a broken/partial prior run. Do not
    invent scope from the codebase; fail immediately instead:

@@ -1,0 +1,13 @@
+id: triage
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 15
+tools: [fs.read, fs.write, fs.list]
+side_effects: []
+skip_when_unchanged: true
+in:
+  ticket: { artifact: ticket-context.md, optional: true }
+out:
+  triage: { artifact: triage.md }
+  change_type: { type: enum, values: [feature, fix, await_input] }

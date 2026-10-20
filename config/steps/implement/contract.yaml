@@ -1,5 +1,5 @@
 id: implement
-version: 2
+version: 3
 kind: judgment
 prompt: SKILL.md
 max_turns: 120
@@ -8,6 +8,7 @@ side_effects: [write:git]
 in:
   design: { artifact: design.md, optional: true }
   tasks: { artifact: tasks.yaml, optional: true }
+  discovery: { artifact: discovery.md, optional: true }
   ticket: { artifact: ticket-context.md, optional: true }
 out:
   tasks: { artifact: tasks.yaml }

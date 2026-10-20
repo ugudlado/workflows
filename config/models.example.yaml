@@ -33,6 +33,7 @@ step_models:
   ux-design: strong
   code-review: strong
   explore: standard
+  triage: fast
   diagnose: standard
   learn: standard
   design-review: standard
