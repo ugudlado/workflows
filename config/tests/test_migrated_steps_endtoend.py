@@ -1,6 +1,6 @@
 """
   - prompt steps (prompt:) resolve to a non-empty charter file + prompt_dir
-  - shell steps (run:) resolve to an existing script path
+  - shell steps (run:) resolve to an existing, executable script path
 """
 from __future__ import annotations
 
@@ -81,3 +81,5 @@ def test_shell_run_path_exists(step_id: str):
     assert isinstance(contract, ScriptStepContract)
     assert contract.run and os.path.isfile(contract.run)
     assert os.access(contract.run, os.R_OK)
+    # The driver execs run_path directly, so readable is not enough.
+    assert os.access(contract.run, os.X_OK), f"{step_id}: {contract.run} is not executable"
