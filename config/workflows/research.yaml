@@ -4,11 +4,10 @@ inputs:
   ticket: { type: string }
 # Research workflow.
 #
-# CLI: `orchestrator research "<prompt>"` — session-driven via session_cli
-# (Redis session state; no durable *_state.yaml). Resume with:
-#   orchestrator --resume <session_id> ["optional input"]
+# Run it like any workflow: `orchestrator-driver submit --workflow research`, or start it from Studio.
+# The driver keeps the run's state; there is no durable *_state.yaml.
 #
-# Identity: change_id / slug / ticket_id = session_id.
+# Identity: change_id / slug / ticket_id = the run's slug.
 # Artifacts: the workflow owns placement — see intake-research/SKILL.md
 #
 # Flow: intake-research asks via `intake_status: await_input` until topic/audience/depth

@@ -1,5 +1,4 @@
-# Example models.yaml — copy and edit, or pass it directly:
-#   orchestrator run TICKET --models-config ./models.example.yaml
+# Example models.yaml — copy to config/models.yaml and edit.
 #
 # Only `models:` and `step_models:` are read. See config/models.yaml for the
 # full explanation of chains, PATH gating, and layer precedence.

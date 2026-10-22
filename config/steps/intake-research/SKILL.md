@@ -8,7 +8,7 @@ user-invocable: true
 
 **Intent:** Turn the user's topic (and any follow-up answers) into a complete
 intake brief. Stay on this step until the checklist is full — do **not** invent
-durable `*_state.yaml`. Session state lives in Redis; you only write artifacts.
+durable `*_state.yaml`. The driver keeps the run's state; you only write artifacts.
 
 ## Session workspace
 
