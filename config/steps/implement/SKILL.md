@@ -30,6 +30,13 @@ protocol. Do not use an `extends` prompt.
    A hotfix run has no design: work from `{in.discovery}` (the diagnosis,
    root cause at `file:line`) plus the ticket, keep the change minimal, and
    write a `tasks.yaml` for what you do.
+   **Quick path** (`{in.triage}` says `# Triage: quick`; no design, tasks,
+   or discovery): work from the ticket plus `{in.triage}`, which names the
+   small scope. Write a `tasks.yaml` for what you do and keep the change small
+   (a few files, no new UI flow, no API/schema change). If it turns out not to
+   be small (it needs investigation, a design decision, or touches
+   security/auth/payments), do not push on: fail the step with that reason so
+   `on_failure` escalates to design.
    **Only one of the two present** (design.md without tasks.yaml, or vice
    versa) is not the patch case — that's a broken/partial prior run. Do not
    invent scope from the codebase; fail immediately instead:

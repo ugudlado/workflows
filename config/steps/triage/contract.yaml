@@ -10,4 +10,4 @@ in:
   ticket: { artifact: ticket-context.md, optional: true }
 out:
   triage: { artifact: triage.md }
-  change_type: { type: enum, values: [feature, fix, await_input] }
+  change_type: { type: enum, values: [feature, fix, quick, await_input] }

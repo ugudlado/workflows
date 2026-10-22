@@ -10,5 +10,6 @@ in:
   tasks: { artifact: tasks.yaml, optional: true }
   discovery: { artifact: discovery.md, optional: true }
   ticket: { artifact: ticket-context.md, optional: true }
+  triage: { artifact: triage.md, optional: true }
 out:
   tasks: { artifact: tasks.yaml }

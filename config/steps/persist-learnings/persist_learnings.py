@@ -20,7 +20,15 @@ Legacy env discovery is used only when that argument is absent.
 Env read (beyond the standard ORCHESTRATOR_* block):
   ORCHESTRATOR_STATE_YAML_PATH   staging file lives beside state.yaml
   ORCHESTRATOR_PROMPT_DIRS       JSON step_id -> prompt dir (the append target)
-  ORCHESTRATOR_PROMPT_PATH       allowed prompt roots (append confinement)
+  ORCHESTRATOR_PROMPT_PATH       allowed prompt roots (append confinement, and
+                                 the fallback charter search for steps absent
+                                 from ORCHESTRATOR_PROMPT_DIRS)
+
+A proposal may target any step in the pack that has a judgment charter. The
+nightly `learn` workflow's own prompt-dir map only holds `learn`, so a step_id
+missing from ORCHESTRATOR_PROMPT_DIRS is resolved against each prompt root as
+`<root>/<step_id>` or `<root>/steps/<step_id>` (it must hold a SKILL.md and stay
+confined to the roots).
 """
 from __future__ import annotations
 
@@ -192,6 +200,25 @@ def validate_provenance(raw: dict[str, Any]) -> None:
         raise RowError("provenance verification requires a reference and result passed")
 
 
+def source_run_slugs(raw: dict[str, Any]) -> list[str]:
+    """Run slugs a proposal's provenance names (``source_runs``), sanitized.
+
+    Optional and advisory: used only to label the commit. Anything that is not
+    a plain slug is dropped so it cannot inject into a commit message.
+    """
+    proof = raw.get("provenance")
+    names = proof.get("source_runs") if isinstance(proof, dict) else None
+    if isinstance(names, str):
+        names = [names]
+    if not isinstance(names, list):
+        return []
+    return [
+        n for n in names
+        if isinstance(n, str) and n and len(n) <= 80
+        and all(c.isalnum() or c in "._-" for c in n)
+    ]
+
+
 def scenario_content(scenario: dict[str, Any]) -> str:
     """Exact normalized situation match; not semantic paraphrase detection."""
     return " ".join(scenario["scenario"].split()).casefold()
@@ -263,6 +290,44 @@ def prompt_roots() -> list[Path]:
         "ORCHESTRATOR_SKILLS_TEST_OVERRIDE"
     ) or ""
     return [Path(p) for p in raw.split(os.pathsep) if p]
+
+
+def _is_judgment_step(step_dir: Path) -> bool:
+    """Only a step whose contract says `kind: judgment` is a learnable charter.
+
+    Keeps the fallback from landing scenarios on exec steps or on stray dirs
+    that merely hold a SKILL.md.
+    """
+    try:
+        text = (step_dir / "contract.yaml").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return any(line.split("#", 1)[0].strip() == "kind: judgment" for line in text.splitlines())
+
+
+def resolve_charter_dir(step_id: str, roots: list[Path]) -> Path | None:
+    """Find a step's charter dir in the pack when the prompt-dir map lacks it.
+
+    Looks for a SKILL.md at ``<root>/<step_id>`` then ``<root>/steps/<step_id>``
+    for every prompt root, and returns the first confined hit.
+    """
+    if (
+        not step_id
+        or step_id in (".", "..")
+        or "/" in step_id
+        or "\\" in step_id
+        or "\0" in step_id
+    ):
+        return None
+    for root in roots:
+        for candidate in (root / step_id, root / "steps" / step_id):
+            if (
+                (candidate / "SKILL.md").is_file()
+                and _is_judgment_step(candidate)
+                and is_confined(candidate, roots)
+            ):
+                return candidate
+    return None
 
 
 def is_confined(path: Path, roots: list[Path]) -> bool:
@@ -389,8 +454,13 @@ def _accept_rows(
     sources: list[Path],
     targets: dict[str, str],
     roots: list[Path],
+    run_slugs: dict[Path, set[str]] | None = None,
 ) -> tuple[dict[Path, list[dict[str, Any]]], list[dict[str, Any]]]:
-    """Split staged rows into per-pack accepted scenarios and skip records."""
+    """Split staged rows into per-pack accepted scenarios and skip records.
+
+    ``run_slugs``, when given, collects the source run slugs named in accepted
+    rows' provenance (``source_runs``) per pack, for commit messages.
+    """
     accepted: dict[Path, list[dict[str, Any]]] = {}
     skipped: list[dict[str, Any]] = []
     known_ids: dict[Path, set[str]] = {}
@@ -420,11 +490,17 @@ def _accept_rows(
 
             pack_raw = targets.get(step_id)
             if not pack_raw:
-                skipped.append({
-                    **where,
-                    "reason": "step_id has no prompt dir in ORCHESTRATOR_PROMPT_DIRS",
-                })
-                continue
+                found = resolve_charter_dir(step_id, roots)
+                if found is None:
+                    skipped.append({
+                        **where,
+                        "reason": (
+                            "step_id has no prompt dir in ORCHESTRATOR_PROMPT_DIRS "
+                            "and no charter (SKILL.md) in the pack's prompt roots"
+                        ),
+                    })
+                    continue
+                pack_raw = str(found)
             pack = Path(pack_raw)
             if not pack.is_dir():
                 skipped.append({**where, "reason": f"prompt dir does not exist: {pack}"})
@@ -466,6 +542,8 @@ def _accept_rows(
             seen.add(scenario_id)
             content.add(signature)
             accepted.setdefault(pack, []).append(scenario)
+            if run_slugs is not None:
+                run_slugs.setdefault(pack, set()).update(source_run_slugs(raw))
 
     return accepted, skipped
 
@@ -518,7 +596,8 @@ def run(proposed_scenarios: Path | None = None) -> int:
         return 0
 
     roots = prompt_roots()
-    accepted, skipped = _accept_rows(sources, prompt_dirs(), roots)
+    run_slugs: dict[Path, set[str]] = {}
+    accepted, skipped = _accept_rows(sources, prompt_dirs(), roots, run_slugs)
     persisted, by_repo = _persist(accepted, skipped, roots)
 
     change_id = (
@@ -526,6 +605,9 @@ def run(proposed_scenarios: Path | None = None) -> int:
         or os.environ.get("CHANGE_ID")
         or "learn"
     )
+    slugs_by_path = {
+        pack / "scenarios" / "train.jsonl": slugs for pack, slugs in run_slugs.items()
+    }
     commits: list[dict[str, Any]] = []
     for root, paths in by_repo.items():
         if root is None:
@@ -536,7 +618,11 @@ def run(proposed_scenarios: Path | None = None) -> int:
                 "reason": "prompt dir is not inside a git repository",
             })
             continue
-        commits.append(commit_group(root, paths, change_id))
+        # Label the commit with the source run slug(s) when provenance names
+        # them, else with this learn run's change id.
+        slugs = sorted(set().union(*(slugs_by_path.get(p, set()) for p in paths)))
+        label = ",".join(slugs[:3]) + ("+" if len(slugs) > 3 else "") if slugs else change_id
+        commits.append(commit_group(root, paths, label))
 
     # Consume the staging file so a re-run of this step cannot re-apply rows.
     # The skip reasons above are the audit trail; they land in step_history.

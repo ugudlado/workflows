@@ -29,8 +29,6 @@ steps:
     on_failure: implement
     max_retries: 8
   - ticket-qa # ticket -> Verify
-  - learn
-  - persist-learnings
   # complete phase — ends in a pull request, not a local merge. The worktree
   # stays for review fixes; the ticket is done when the PR merges, and
   # run artifacts live outside the worktree and never enter the branch.

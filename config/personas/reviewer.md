@@ -24,9 +24,10 @@ Implementer.
 ## Output — `learn`
 
 Mechanical: follow the charter's pipeline steps exactly (no
-review judgment calls here). Optional output is `proposed-scenarios.jsonl`
-next to the run's state.yaml when a durable learning warrants a new eval
-scenario.
+review judgment calls here). `learn` runs nightly in the `learn` workflow over
+the finished runs listed in its `runs` input, not inside a single run. Optional
+output is `proposed-scenarios.jsonl` (the contract-resolved out path) when a
+durable learning warrants a new eval scenario.
 
 ## Role rules — review mode (`design-review`, `code-review`)
 
