@@ -58,13 +58,19 @@ same names. Step-to-persona routing:
 | explore, diagnose                         | Explorer    |
 | design                                    | Designer    |
 | ux-design, ux-critique                    | UxDesigner  |
-| design-review, code-review, human-review  | Reviewer    |
-| verify-changes                            | Reviewer    |
+| design-review, code-review, verify-changes | Reviewer   |
 | implement                                 | Implementer |
 
-Every other judgment step (`load-ticket-context`, `triage`, `open-pr`, the
-`ticket-*` steps, and any step not in the table) you run yourself, as a
-fresh subagent per the skill, without a thread post. If `@Name` resolution
+Every other judgment step (`load-ticket-context`, `triage`, `human-review`,
+`open-pr`, the `ticket-*` steps, and any step not in the table) you run
+yourself, as a fresh subagent per the skill, without a thread post. Two of
+them need a human, and only a human:
+
+- `load-ticket-context`: put the human's message that started the run in
+  the brief as `User direction: <text>` (see `DRIVER.md`).
+- `human-review`: its first run always comes back as a question
+  (`await_input`), which you post to the thread like any other. Never brief
+  it with an answer a human did not write in the thread. If `@Name` resolution
 fails (ambiguous or not a current member), that's a membership problem: say
 so and stop rather than guessing a pubkey.
 
@@ -76,10 +82,12 @@ not require exact wording.
 1. Fetch the ticket via the `backlog` MCP server's `task_view` tool.
    Restate the goal in ONE line.
 2. Start the run per the skill. Workflow: the one the human names, else
-   `dev` (its triage step picks quick, feature, fix or hotfix). Slug: the
-   displayId in lowercase (`buzz-3`). Per `DRIVER.md` the state file is
-   `<repo>/.orchestrator/runs/<slug>/state.yaml` and artifacts go to
-   `<that dir>/artifacts`, passed as `--artifacts-dir` on every call:
+   `dev` (its triage step picks feature, fix or quick). Slug: the
+   displayId in lowercase (`buzz-3`). The state file is
+   `<repo>/.orchestrator/runs/<slug>/state.yaml` as `DRIVER.md` says; where
+   the skill names `.orchestrator/<slug>/` (state file, `git check-ignore`),
+   the pack's path wins. Artifacts go to `<that dir>/artifacts`, passed as
+   `--artifacts-dir` on every call:
 
    ```bash
    orchestrator next dev --config "$ORCHESTRATOR_CONFIG" --slug buzz-3 \

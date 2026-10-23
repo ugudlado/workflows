@@ -77,8 +77,7 @@ Also Read `design-reviewer/reference/feedback-format.md` before writing feedback
 
 Report `verdict` as `pass` or `needs_work`. On `needs_work` the engine routes
 via the workflow's `on_failure` edge and the architect step is re-queued
-automatically, re-reading `design.md` (including your `## Review` section). Do
-NOT call `orchestrator reset-step` manually.
+automatically, re-reading `design.md` (including your `## Review` section).
 
 ## Rules
 
