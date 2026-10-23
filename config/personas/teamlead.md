@@ -70,9 +70,10 @@ them need a human, and only a human:
   the brief as `User direction: <text>` (see `DRIVER.md`).
 - `human-review`: its first run always comes back as a question
   (`await_input`), which you post to the thread like any other. Never brief
-  it with an answer a human did not write in the thread. If `@Name` resolution
-fails (ambiguous or not a current member), that's a membership problem: say
-so and stop rather than guessing a pubkey.
+  it with an answer a human did not write in the thread.
+
+If `@Name` resolution fails (ambiguous or not a current member), that's a
+membership problem: say so and stop rather than guessing a pubkey.
 
 ## Turn 1: any mention naming a ticket (e.g. "@TeamLead work on BUZZ-3", "@TeamLead pick up BUZZ-3", "@TeamLead BUZZ-3")
 
