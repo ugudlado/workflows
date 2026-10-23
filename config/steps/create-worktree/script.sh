@@ -61,4 +61,17 @@ git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_PATH" HEAD 2>&1 >&2 || 
   }
 }
 
+# A fresh worktree has none of the repo's untracked setup (node_modules, a venv,
+# sibling checkouts its build expects). The repo's own committed
+# .orchestrator/setup.sh, if any, makes it ready: it runs here, outside the agent
+# sandbox and with network, in the new worktree, with REPO_ROOT set to the main
+# checkout. Checks that later steps run inside the sandbox can then work offline.
+SETUP="$WORKTREE_PATH/.orchestrator/setup.sh"
+if [ -f "$SETUP" ]; then
+  (cd "$WORKTREE_PATH" && REPO_ROOT="$REPO_ROOT" bash "$SETUP") >&2 || {
+    printf '%s\n' "{\"created\": true, \"reason\": \"setup.sh failed\", \"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\", \"state_patch\": {\"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\"}}"
+    exit 1
+  }
+fi
+
 printf '%s\n' "{\"created\": true, \"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\", \"state_patch\": {\"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\"}}"

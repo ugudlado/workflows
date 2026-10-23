@@ -87,3 +87,25 @@ re-run the step with the answer as the new `User direction`.
 
 The status steps take `ticket.json` as the optional `in.ticket_ref`; absent, they
 report `skipped (no ticket)`. A failed tracker update fails the step.
+
+# Worktree setup and environment blockers
+
+A fresh worktree has none of a repo's untracked setup (node_modules, a venv,
+sibling checkouts its build expects), and judgment steps run in a sandbox with
+no network, so they cannot install any of it. `create-worktree` runs the repo's
+committed `.orchestrator/setup.sh`, if present, once in the new worktree,
+outside the sandbox and with network, with `REPO_ROOT` set to the main checkout.
+A non-zero exit fails the step. Consumers commit it next to their bindings:
+
+```gitignore
+.orchestrator/*
+!.orchestrator/bindings.yaml
+!.orchestrator/setup.sh
+```
+
+An environment blocker (commit signing that the sandbox cannot reach, a missing
+dependency, a check the sandbox blocks) is not a code failure: `implement`
+reports `outcome: await_input` and `code-review` reports `verdict: await_input`,
+each with an `ask` naming the blocker. Relay it like any other question; failing
+instead would send the run back to design or implement, which cannot fix the
+machine.

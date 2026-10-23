@@ -1,5 +1,5 @@
 id: implement
-version: 3
+version: 4
 kind: judgment
 prompt: SKILL.md
 max_turns: 120
@@ -13,3 +13,5 @@ in:
   triage: { artifact: triage.md, optional: true }
 out:
   tasks: { artifact: tasks.yaml }
+  # await_input: an environment blocker a human must clear (see SKILL.md); omit otherwise.
+  outcome: { type: enum, values: [implemented, await_input], optional: true }
