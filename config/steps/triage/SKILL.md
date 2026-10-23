@@ -28,6 +28,11 @@ ticket alone; do not explore code or propose a solution.
      changes an API, schema or data model, touches security, auth or
      payments, or needs investigation to understand. When in doubt choose
      `feature` or `fix`; `quick` skips design and diagnosis.
+   - Judge the change the ticket most likely needs, not every branch it
+     hedges on. A conditional fallback ("if the API doesn't return it yet,
+     add it") is not by itself an API change. When a hedge is the only thing
+     against `quick`, choose `quick` and name the hedge in the rationale: a
+     quick change whose implement fails escalates to design anyway.
 3. Write `{out.triage}`: a heading with the call (`# Triage: feature`,
    `# Triage: fix` or `# Triage: quick`) and one paragraph of rationale that
    quotes or cites the ticket text the call rests on.

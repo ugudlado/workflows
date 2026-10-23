@@ -1,5 +1,5 @@
 id: triage
-version: 1
+version: 2
 kind: judgment
 prompt: SKILL.md
 max_turns: 15
