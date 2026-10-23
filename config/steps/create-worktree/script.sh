@@ -35,9 +35,11 @@ print(raw.get('schema') or '')
 " 2>/dev/null || printf '\n\n'
 }
 
-IFS=$'\n' read -r _EXISTING_WT _SCHEMA <<< "$(read_state)"
+{ IFS= read -r _EXISTING_WT; IFS= read -r _SCHEMA; } <<< "$(read_state)"
 
+# <workflow>/<slug>, bugfix as fix/; dev's name-branch renames dev/<slug> after triage.
 SCHEMA="${_SCHEMA:-feature}"
+[ "$SCHEMA" = bugfix ] && SCHEMA=fix
 BRANCH="$SCHEMA/$CHANGE_ID"
 WORKTREE_PATH="$WORKTREE_BASE_DIR/$CHANGE_ID"
 

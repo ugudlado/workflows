@@ -28,11 +28,11 @@ def _run(tmp_path: Path, triage: str | None, worktree: bool = True) -> tuple[int
     arts.mkdir()
     if triage is not None:
         (arts / "triage.md").write_text(triage)
-    env = {**os.environ, "CHANGE_ID": "demo", "ORCHESTRATOR_ARTIFACTS_DIR": str(arts)}
-    for k in ("STATE_YAML_PATH", "ORCHESTRATOR_STATE_YAML_PATH", "WORKTREE_PATH", "BRANCH"):
+    state = tmp_path / "state.yaml"
+    state.write_text(f"slug: demo\nworktree_path: {wt}\nbranch: dev/demo\n" if worktree else "slug: demo\n")
+    env = {**os.environ, "CHANGE_ID": "demo", "ORCHESTRATOR_ARTIFACTS_DIR": str(arts), "STATE_YAML_PATH": str(state)}
+    for k in ("ORCHESTRATOR_STATE_YAML_PATH", "WORKTREE_PATH", "BRANCH"):
         env.pop(k, None)
-    if worktree:
-        env.update(WORKTREE_PATH=str(wt), BRANCH="dev/demo")
     res = subprocess.run(["bash", str(_SCRIPT)], env=env, capture_output=True, text=True)
     return res.returncode, json.loads(res.stdout.strip().splitlines()[-1]), wt
 
@@ -52,5 +52,19 @@ def test_no_worktree_still_reports_the_call(tmp_path):
 
 def test_unreadable_triage_fails_instead_of_defaulting(tmp_path):
     rc, out, wt = _run(tmp_path, "Looks like a fix to me.\n")
-    assert rc != 0 and "Triage" in out["outputs"]["reason"]
+    # exit 0 with status: failed, so the engine records the reason, not "script exited 1"
+    assert rc == 0 and out["status"] == "failed" and "Triage" in out["outputs"]["reason"]
+    assert _git(wt, "symbolic-ref", "--short", "HEAD") == "dev/demo"
+
+
+def test_existing_target_branch_fails_with_a_reason(tmp_path):
+    repo = tmp_path / "pre" / "repo"
+    rc, out, wt = _run(tmp_path / "pre", "# Triage: fix\n")  # renames dev/demo -> fix/demo
+    _git(repo, "branch", "-m", "fix/demo", "dev/demo")
+    _git(repo, "branch", "fix/demo", "main")
+    env = {**os.environ, "CHANGE_ID": "demo", "ORCHESTRATOR_ARTIFACTS_DIR": str(tmp_path / "pre" / "arts"),
+           "STATE_YAML_PATH": str(tmp_path / "pre" / "state.yaml")}
+    res = subprocess.run(["bash", str(_SCRIPT)], env=env, capture_output=True, text=True)
+    out = json.loads(res.stdout.strip().splitlines()[-1])
+    assert res.returncode == 0 and out["status"] == "failed" and "already exist" in out["outputs"]["reason"]
     assert _git(wt, "symbolic-ref", "--short", "HEAD") == "dev/demo"
