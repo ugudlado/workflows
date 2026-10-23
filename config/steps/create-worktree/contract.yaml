@@ -1,11 +1,13 @@
 id: create-worktree
-version: 3
+version: 4
 kind: exec
 run: script.sh
 tools: [fs.read, fs.write, shell.run, git.worktree]
 side_effects: [write:workspace]
-in: {}
+in:
+  triage: { artifact: triage.md, optional: true } # names the branch type
 out:
   created: { type: boolean }
   worktree_path: { type: string }
   branch: { type: string }
+  change_type: { type: enum, values: [feature, fix, quick], optional: true } # triage's call, for dev.yaml's routes

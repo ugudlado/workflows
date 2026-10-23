@@ -73,7 +73,9 @@ engine answers `needs_you`): its `step_history` has a completed
 
 Workflows read the ticket and never move it: the tracker does that itself
 (Linear moves an issue when a branch or PR names its id). Use the ticket id as
-the run's slug so the branch (`<type>/<slug>`) carries it; `open-pr` also links
+the run's slug so the branch carries it. `create-worktree` names the branch
+`<type>/<slug>`: `feature/`, `fix/` or `chore/` from triage's call in dev, or
+from the workflow (`feature`, `bugfix` → `fix/`) without triage; `open-pr` also links
 the ticket in the PR body.
 
 `load-ticket-context` is a judgment step. It picks the ticketing tool itself by

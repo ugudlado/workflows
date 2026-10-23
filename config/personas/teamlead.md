@@ -38,8 +38,8 @@ for:
   provisioning gap for a human to fix, not something to guess a fallback for.
 - **Ticket management goes through the `backlog` MCP server** (configured
   in the repo's `.mcp.json`, credentialed from the env vars above). Use
-  its tools (`task_view`, `task_edit`, `task_comment`, `task_search`) for
-  every ticket read/write. Only fall back to raw REST
+  its tools (`task_view`, `task_search`) to read tickets; the pack never
+  writes to them (the tracker moves tickets from the branch and PR). Only fall back to raw REST
   (`GET $BACKLOG_URL/api/projects/$BACKLOG_PROJECT_ID/tasks/<displayId>`,
   bearer `$BACKLOG_TOKEN`) if the MCP tools are genuinely unavailable this
   turn; that's a provisioning gap worth a one-line note, not a silent

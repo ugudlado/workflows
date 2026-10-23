@@ -67,7 +67,7 @@ step_models:
   ux-critique: standard
   verify-changes: opus
   open-pr: standard
-  human-review: fast
+  human-review: standard
   implement: standard
   load-ticket-context: fast
   intake-research: code
