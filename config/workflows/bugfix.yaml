@@ -21,7 +21,11 @@ steps:
   # complete phase — same PR tail as feature (see DRIVER.md).
   - { gate: pr-signoff, show: [design, tasks, code_review], approve_as: merge_token }
   - mark-change-completed
-  - id: open-pr
+  - id: fetch-base # fetch origin's default branch with the pack's token (open-pr has no network)
+    requires: merge_token
+  - id: open-pr # rebase, full verify, write the PR title and body
+    requires: merge_token
+  - id: push-pr # push the branch and open the PR with the pack's token; problems become questions
     requires: merge_token
   # cleanup — waits for the PR to merge, then tears down. No archive commit:
   # it would land on the merged (dead) branch and vanish with the worktree.

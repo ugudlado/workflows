@@ -56,10 +56,29 @@ gates): `collect-runs` → `learn` → `persist-learnings` → `mark-learned`.
 # `feature` / `bugfix` complete phase
 
 Both end in a pull request, not a local merge: gate `pr-signoff` →
-`mark-change-completed` → `open-pr` (requires `merge_token`) →
-gate `pr-merged` → `remove-worktree` → `workflow-report`.
-`open-pr` pushes the branch and runs `gh pr create`; it never merges. The run
-then waits at `pr-merged`: the worktree stays for review fixes until the PR
+`mark-change-completed` → `fetch-base` → `open-pr` → `push-pr` (all three
+require `merge_token`) → gate `pr-merged` → `remove-worktree` →
+`workflow-report`. Nothing merges.
+
+- `fetch-base` (exec) fetches origin's default branch and writes
+  `pr-base.json` (`base_ref`, `fetched`, and a `reason` when it couldn't).
+- `open-pr` (judgment, no network, no forge tools) rebases onto `base_ref`,
+  runs the full verification and writes `pr.md`: `# <title>`, then the body.
+- `push-pr` (exec) pushes the run branch (and `pr-assets`), finds or creates
+  the PR from `pr.md`, puts its link at the top of `pr.md`, and returns
+  `pr_urls` (state: `pr_url`).
+
+Only the two exec steps reach GitHub, with a token from a file:
+`~/.config/orchestrator/github-token` (`ORCH_GITHUB_TOKEN_FILE` overrides; keep
+it under `~/.config`, which the claude worker denies to agents). A fine-grained
+token with Contents and Pull requests read/write on the project repos is
+enough. Both refuse a repo whose own git config could redirect the token
+(`url.*`, `http.*`, `remote.*.pushurl`, `include.*`, ...). A Codex step can
+read files the claude worker hides, so run Codex steps only where that token
+is acceptable to expose. When `push-pr` can't open the PR (no token, origin
+not on GitHub, a forge binding for another provider, a GitHub error) it asks
+instead of failing; an answer holding a pull request URL (one opened by hand)
+completes it. The run then waits at `pr-merged`: the worktree stays for review fixes until the PR
 merges. Approve the gate only once the PR is merged (`gh pr view --json state`
 = `MERGED`); `remove-worktree` force-removes the worktree. Run artifacts are
 never committed to the branch, and there is no archive step — the run dir is

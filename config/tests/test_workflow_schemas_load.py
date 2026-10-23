@@ -194,18 +194,21 @@ def test_feature_schema_verifies_after_code_review():
 def test_schema_ends_in_pr_not_merge(schema_name):
     steps = _schema_step_ids(schema_name)
     tail = steps[steps.index("mark-change-completed"):]
-    assert tail == ["mark-change-completed", "open-pr", "pr-merged",
+    assert tail == ["mark-change-completed", "fetch-base", "open-pr", "push-pr", "pr-merged",
                     "remove-worktree", "workflow-report"]
     assert not {"archive-completed-change", "merge-to-main"} & set(steps)
-    assert _schema_step_entry(schema_name, "open-pr")["requires"] == "merge_token"
+    for step in ("fetch-base", "open-pr", "push-pr"):
+        assert _schema_step_entry(schema_name, step)["requires"] == "merge_token"
     assert _schema_step_entry(schema_name, "remove-worktree")["requires"] == "cleanup_token"
     # The tracker moves tickets itself (Linear, from the branch and PR), so no workflow has status steps.
     assert not [s for s in steps if s.startswith("ticket-")]
 
 
 def test_open_pr_contract():
+    # The agent writes the PR; only push-pr, an exec step holding the token, reaches the remote.
     contract = load_contract_for_step("open-pr", _REAL_HOME)
     assert isinstance(contract, AgentStepContract)
-    assert contract.side_effects == ["write:remote"]
-    assert contract.outputs["pr"]["artifact"] == "pr.md"
-    assert contract.outputs["pr_urls"]["type"] == "string"
+    assert contract.side_effects == ["write:git"]
+    assert not {"git.push", "git.fetch", "net.fetch", "forge.pr"} & set(contract.tools)
+    assert contract.outputs["pr"]["artifact"] == "pr.md" and "pr_urls" not in contract.outputs
+    assert contract.inputs["base"]["artifact"] == "pr-base.json"

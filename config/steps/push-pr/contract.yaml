@@ -1,0 +1,11 @@
+id: push-pr
+version: 1
+kind: exec
+run: script.sh
+tools: [git.push, forge.pr]
+side_effects: [write:remote]
+in:
+  pr: { artifact: pr.md }
+  base: { artifact: pr-base.json, optional: true }
+out:
+  pr_urls: { type: string }
