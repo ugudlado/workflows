@@ -100,7 +100,8 @@ from (never the working tree) and runs only when the branch is new: a reused
 branch may hold an earlier run's agent commits. That commit is only as trusted
 as the main checkout's refs: the self-hosted driver's sandbox denies agents
 writes to its `HEAD`, current branch ref and `packed-refs`; another driver must
-do the same. A non-zero exit removes the new worktree and branch, so a retry
+do the same. Treat `setup.sh` like a committed git hook: it runs with the
+driver user's environment and network. A non-zero exit removes the new worktree and branch, so a retry
 starts clean, and fails the step. Consumers commit it next to their bindings:
 
 ```gitignore
