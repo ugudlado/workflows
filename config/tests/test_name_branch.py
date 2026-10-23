@@ -68,3 +68,13 @@ def test_existing_target_branch_fails_with_a_reason(tmp_path):
     out = json.loads(res.stdout.strip().splitlines()[-1])
     assert res.returncode == 0 and out["status"] == "failed" and "already exist" in out["outputs"]["reason"]
     assert _git(wt, "symbolic-ref", "--short", "HEAD") == "dev/demo"
+
+
+def test_a_quote_in_the_branch_name_keeps_the_json_valid(tmp_path):
+    rc, out, wt = _run(tmp_path / "x", "# Triage: fix\n")
+    _git(wt, "checkout", "-q", "-b", 'x"y')  # agent-made branch in the worktree
+    env = {**os.environ, "CHANGE_ID": "demo", "ORCHESTRATOR_ARTIFACTS_DIR": str(tmp_path / "x" / "arts"),
+           "STATE_YAML_PATH": str(tmp_path / "x" / "state.yaml")}
+    res = subprocess.run(["bash", str(_SCRIPT)], env=env, capture_output=True, text=True)
+    out = json.loads(res.stdout.strip().splitlines()[-1])
+    assert out["status"] == "failed" and 'x"y' in out["outputs"]["reason"]

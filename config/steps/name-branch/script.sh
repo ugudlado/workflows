@@ -17,8 +17,9 @@ set -uo pipefail
 : "${ORCHESTRATOR_ARTIFACTS_DIR:?orchestrator: ORCHESTRATOR_ARTIFACTS_DIR required}"
 
 # A failed step exits 0 with status: failed, so its reason reaches the engine.
+# Branch names come from the worktree an agent can write, so encode, never interpolate.
 fail() {
-  printf '%s\n' "{\"status\": \"failed\", \"outputs\": {\"reason\": \"$1\"}}"
+  python3 -c 'import json, sys; print(json.dumps({"status": "failed", "outputs": {"reason": sys.argv[1]}}))' "$1"
   exit 0
 }
 
@@ -60,4 +61,4 @@ if [ "$OLD" != "$NEW" ]; then
     fail "could not rename $OLD to $NEW (does $NEW already exist?)"
 fi
 
-printf '%s\n' "{\"change_type\": \"$CHANGE_TYPE\", \"branch\": \"$NEW\", \"state_patch\": {\"branch\": \"$NEW\"}}"
+python3 -c 'import json, sys; print(json.dumps({"change_type": sys.argv[1], "branch": sys.argv[2], "state_patch": {"branch": sys.argv[2]}}))' "$CHANGE_TYPE" "$NEW"
