@@ -1,16 +1,17 @@
 id: open-pr
-version: 2
+version: 3
 kind: judgment
 prompt: SKILL.md
 max_turns: 80
-tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.fetch, git.commit, git.push, net.fetch, forge.pr]
-side_effects: [write:remote]
+# No network and no forge: push-pr (an exec step with the pack's token) pushes and opens the PR.
+tools: [fs.read, fs.write, fs.list, shell.run, shell.test, git.status, git.diff, git.commit]
+side_effects: [write:git]
 in:
   design: { artifact: design.md, optional: true }
   tasks: { artifact: tasks.yaml, optional: true }
   code_review: { artifact: code-review.md, optional: true }
   verification: { artifact: verify-changes.md, optional: true }
   ticket: { artifact: ticket-context.md, optional: true }
+  base: { artifact: pr-base.json, optional: true }
 out:
   pr: { artifact: pr.md }
-  pr_urls: { type: string }

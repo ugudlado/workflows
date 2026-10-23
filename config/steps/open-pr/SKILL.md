@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: "Open a GitHub pull request for the run branch with proof of verification. Use after the change is approved, instead of merging locally."
+description: "Prepare the run branch's pull request with proof of verification: rebase, full verify, PR title and body. push-pr then pushes it and opens the PR. Use after the change is approved, instead of merging locally."
 user-invocable: true
 ---
 
@@ -12,58 +12,51 @@ branch.
 
 ## Publisher
 
-You publish the run branch as one or more PRs and own the result.
+You get the run branch ready and write its pull request. You have no network
+and no forge credentials: the next step, `push-pr`, pushes the branch and opens
+the PR from what you write, with a token you never see. Don't try to push,
+fetch or call a forge yourself.
 
 ### Rules
 
 - Follow the target repo's PR conventions (`AGENTS.md`, `CLAUDE.md`,
-  `README.md`, contributing docs) — e.g. stacked PRs per layer, each passing
-  its full check and linked with `gh stack link`, stack position in each
-  description, required attribution lines. When the repo says nothing: one PR.
+  `README.md`, contributing docs): title format, required sections,
+  attribution lines. `push-pr` opens one PR per run; if the repo requires
+  stacked PRs, say so in the body's Risks/rollout section.
 - Real output only. Quote what commands printed; never assume a pass.
-- Never merge, never force-push a branch you did not create, never commit run
-  artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR` contents) or screenshots to the feature branch.
-- Failing checks or rebase conflicts mean `failed` and no PR.
-
-## Forge binding
-
-If `ORCHESTRATOR_BINDINGS` (JSON, from the step payload) has a non-null `forge`
-binding, use exactly that tool (its `provider`, `via`, and `server` or
-`command`) for every forge operation below, in place of `gh`. Never fall back
-to detecting another forge when a binding is set: if the bound tool is
-unavailable or unauthenticated, say so and stop `failed`. A null or absent
-`forge` binding keeps the behaviour below (`gh`, or what the repo's conventions
-name).
+- Never merge, never commit run artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR`
+  contents) or screenshots to the feature branch.
+- Failing checks or rebase conflicts mean `failed`, and no `{out.pr}`.
 
 ## Steps
 
 1. Read the repo's PR conventions. Discover its full verification command
    (e.g. `pnpm verify`) from the docs.
-2. Fetch, then rebase the branch onto the up-to-date default branch
-   (`origin/HEAD`). On conflicts, abort the rebase and stop `failed`, listing
-   the conflicting files.
+2. Rebase the branch onto the default branch named in `{in.base}`
+   (`base_ref`; `fetch-base` just fetched it, and its `reason` says why when
+   it couldn't). Without `{in.base}`, use `origin/HEAD`. On conflicts, abort
+   the rebase and stop `failed`, listing the conflicting files.
 3. Run the full verification command and capture the output with pass/fail
-   counts. Any failure: stop `failed` with the failing output; open no PR.
+   counts. Any failure: stop `failed` with the failing output.
 4. Assemble evidence: the acceptance-criteria table from `{in.verification}`,
    commands run with pass/fail counts, and anything else that proves the
    behaviour (integration test names, API responses via the repo's test
    harness).
 5. Screenshots only when the diff changes user-visible UI. Capture
    before/after with the repo's own run/browser tooling, commit the images to
-   an orphan branch `pr-assets` under `<slug>/`, push it, and embed with
+   an orphan branch `pr-assets` under `<slug>/` (`push-pr` pushes it too), and
+   embed with
    `https://github.com/<owner>/<repo>/blob/pr-assets/<slug>/<file>?raw=true`.
    No UI change: write "No UI change — no screenshots".
-6. Split into stacked PRs if the repo's conventions require it; each layer must
-   pass the full check on its own.
-7. Push the branch and `gh pr create` with sections: Summary, Ticket link,
-   Key decisions (from `{in.design}`), Verification (evidence), Test plan,
-   Risks/rollout, Screenshots. Apply the repo's attribution lines.
-8. Write the final PR URL(s) and body to `{out.pr}`; return `pr_urls`
-   (comma-separated).
+6. Write `{out.pr}`: the first line is `# <PR title>`, the rest is the PR body
+   with sections Summary, Ticket link, Key decisions (from `{in.design}`),
+   Verification (evidence), Test plan, Risks/rollout, Screenshots, plus the
+   repo's attribution lines.
 
 ## Verify
 
-- Every PR URL resolves (`gh pr view`) and its body has all seven sections.
+- `{out.pr}` starts with `# ` and a title, and its body has all seven sections.
 - Evidence in the body is pasted from this run's real command output.
+- The branch is rebased onto the base and the full verification passed on it.
 - The feature branch contains no run artifacts (`$ORCHESTRATOR_ARTIFACTS_DIR` contents) or screenshots.
-- Nothing was merged or force-pushed.
+- Nothing was merged or pushed.

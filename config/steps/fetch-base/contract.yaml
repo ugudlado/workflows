@@ -1,0 +1,10 @@
+id: fetch-base
+version: 1
+kind: exec
+run: script.sh
+tools: [git.fetch]
+side_effects: [write:git]
+in: {}
+out:
+  base: { artifact: pr-base.json } # {default_branch, base_ref, base_sha, fetched, reason?}
+  fetched: { type: boolean }
