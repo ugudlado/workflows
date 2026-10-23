@@ -53,7 +53,7 @@ models:
 
 step_models:
   # Larger models plan and review (triage, diagnose, design, the reviews); smaller ones execute
-  # (implement, open-pr, UX) and keep the books (ticket steps, human-review's ask). A wrong plan or a
+  # (implement, open-pr, UX) and keep the books (load-ticket-context, human-review's ask). A wrong plan or a
   # missed defect costs more re-runs than the model difference. ORCH_MODEL_OVERRIDE in the driver
   # replaces all of this with one model.
   design: strong
@@ -70,11 +70,6 @@ step_models:
   human-review: fast
   implement: standard
   load-ticket-context: fast
-  ticket-start: fast
-  ticket-review: fast
-  ticket-qa: fast
-  ticket-rework: fast
-  ticket-done: fast
   intake-research: code
   source-search: code
   synthesize-findings: code

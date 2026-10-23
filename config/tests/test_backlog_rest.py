@@ -1,6 +1,6 @@
 """Backlog REST integration: ticket context, project resolution, and API helpers.
 
-Covers config/lib/ticket/backlog-api.sh, fetch-ticket.sh and set-status.sh (the backlog tracker's helpers, used by the ticket judgment steps) — all
+Covers config/lib/ticket/backlog-api.sh and fetch-ticket.sh (the backlog tracker's helpers, used by load-ticket-context) — all
 config-owned bash, exercised via subprocess. Engine-boundary assertions (that
 orchestrator_next has no ticket-fetching logic of its own) live in
 orchestrator_next/tests/test_run_loop_ticket_agnostic.py instead.
@@ -23,7 +23,6 @@ if _REPO not in sys.path:
 _REPO_PATH = Path(_REPO)
 _FETCH_SCRIPT = _REPO_PATH / "lib" / "ticket" / "fetch-ticket.sh"
 _API_SH = _REPO_PATH / "lib" / "ticket" / "backlog-api.sh"
-_SET_STATUS_SH = _REPO_PATH / "lib" / "ticket" / "set-status.sh"
 
 
 def _run_fetch(tmp_path, args, env):
@@ -197,80 +196,6 @@ def test_correlation_line_omits_absent_parts():
     got = _correlation_line({"ORCHESTRATOR_STEP_ID": "code-review"})
     assert got == "correlation: ticket=ORC-125 step=code-review"
     assert "change=" not in got
-
-def _run_set_status(tmp_path: Path, current_status: str, *, put_fails: bool = False) -> tuple:
-    """Run set-status.sh against a fake curl reporting current_status; return (proc, bodies)."""
-    state_dir = tmp_path / "st"
-    state_dir.mkdir(exist_ok=True)
-    state_yaml = state_dir / "state.yaml"
-    state_yaml.write_text(yaml.safe_dump({"ticket_id": "orc-125", "change_id": "orc-125"}))
-    (tmp_path / "spec").mkdir(exist_ok=True)
-    (tmp_path / "spec" / "project.yaml").write_text(yaml.safe_dump({"ticketing": "backlog"}))
-
-    fake_bin = tmp_path / "bin"
-    fake_bin.mkdir(exist_ok=True)
-    posted = tmp_path / "posted.txt"
-    curl = fake_bin / "curl"
-    task_json = json.dumps({"id": "ORC-125", "status": current_status})
-    curl.write_text(
-        "#!/usr/bin/env bash\n"
-        "args=(\"$@\")\n"
-        "for i in \"${!args[@]}\"; do\n"
-        "  if [ \"${args[$i]}\" = '-d' ]; then payload=\"${args[$((i+1))]}\"; fi\n"
-        "done\n"
-        f"case \"${{args[*]}}\" in *'/api/projects/orc/tasks/ORC-125/comments'*) printf '%s\\n' \"$payload\" >> '{posted}'; echo '{{}}'; exit 0 ;; esac\n"
-        + ("case \"${args[*]}\" in *'-X PUT'*) exit 22 ;; esac\n" if put_fails else "")
-        + f"printf '%s' '{task_json}'\n"
-    )
-    curl.chmod(0o755)
-
-    env = os.environ.copy()
-    env["PATH"] = f"{fake_bin}:{os.environ['PATH']}"
-    env["BACKLOG_URL"] = "https://example.test"
-    env["BACKLOG_TOKEN"] = "tok"
-    env["BACKLOG_PROJECT_ID"] = "orc"
-    env["REPO_ROOT"] = str(tmp_path)
-    env["ORCHESTRATOR_ARTIFACTS_DIR"] = str(tmp_path / "artifacts")
-    env["ORCHESTRATOR_STATE_YAML_PATH"] = str(state_yaml)
-    env["ORCHESTRATOR_CHANGE_ID"] = "orc-125"
-    env["ORCHESTRATOR_STEP_ID"] = "ticket-done"
-
-    proc = subprocess.run(
-        ["bash", str(_SET_STATUS_SH), "orc-125", "Done"],
-        capture_output=True, text=True, cwd=str(tmp_path), env=env,
-    )
-    bodies = [json.loads(line) for line in
-              (posted.read_text().splitlines() if posted.exists() else [])]
-    return proc, bodies
-
-def test_set_status_comments_on_transition(tmp_path):
-    proc, bodies = _run_set_status(tmp_path, "In Progress")
-    assert proc.returncode == 0, proc.stderr
-    assert len(bodies) == 1, bodies
-    assert "correlation: ticket=ORC-125 change=orc-125 step=ticket-done" in bodies[0]["body"]
-
-def test_set_status_rerun_does_not_duplicate_comment(tmp_path):
-    """Already at the target status: skip the transition and the comment with it."""
-    proc, bodies = _run_set_status(tmp_path, "Done")
-    assert proc.returncode == 0, proc.stderr
-    assert bodies == []
-    assert "already Done" in proc.stderr
-
-def test_set_status_update_failure_exits_nonzero(tmp_path):
-    """A failed status PUT fails the helper (and so the step); no comment is posted."""
-    proc, bodies = _run_set_status(tmp_path, "In Progress", put_fails=True)
-    assert proc.returncode == 1
-    assert "REST status update failed" in proc.stderr
-    assert bodies == []
-
-
-def test_set_status_unconfigured_fails(tmp_path):
-    env = {k: v for k, v in os.environ.items() if not k.startswith("BACKLOG_")}
-    proc = subprocess.run(["bash", str(_SET_STATUS_SH), "ORC-1", "Done"],
-                          capture_output=True, text=True, env=env)
-    assert proc.returncode == 1
-    assert "missing" in proc.stderr
-
 
 def test_backlog_api_format_plain_roundtrip():
     """format helper produces readable AC lines from JSON."""

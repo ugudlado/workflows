@@ -1,6 +1,6 @@
 # Choosing the ticket tracker
 
-Every ticket step follows this guide. The repo may track work in any system;
+`load-ticket-context` follows this guide (workflows no longer move tickets: the tracker does that from the branch and PR). The repo may track work in any system;
 you find out which by inspecting what you actually have, never by assuming.
 
 1. **A bound tool wins.** If `ORCHESTRATOR_BINDINGS` (JSON, from the step
@@ -23,8 +23,8 @@ you find out which by inspecting what you actually have, never by assuming.
      prints `backlog` when the pack's backlog helper is configured.
 4. **List the issue-tracking tools you really have:** MCP tools that get,
    search or update issues; the CLI for the repo's git forge, if installed and
-   authenticated; the pack's backlog helper (`<pack>/lib/ticket/fetch-ticket.sh`,
-   `set-status.sh`), if configured.
+   authenticated; the pack's backlog helper (`<pack>/lib/ticket/fetch-ticket.sh`), if
+   configured.
 5. **Pick the tracker where the id resolves.** Try a read-only lookup of the id
    with each plausible candidate, most specific signal first. The one that
    returns the ticket wins. If more than one returns a ticket with different

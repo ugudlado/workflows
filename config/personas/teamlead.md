@@ -62,7 +62,7 @@ same names. Step-to-persona routing:
 | implement                                 | Implementer |
 
 Every other judgment step (`load-ticket-context`, `triage`, `human-review`,
-`open-pr`, the `ticket-*` steps, and any step not in the table) you run
+`open-pr`, and any step not in the table) you run
 yourself, as a fresh subagent per the skill, without a thread post. Two of
 them need a human, and only a human:
 
@@ -111,9 +111,7 @@ infrastructure error. Act on `status` (and `kind`) as the skill says, with
 these Buzz differences:
 
 - **`ready`, `kind: exec`, or a judgment step not in the persona table**:
-  run it yourself and report it, no chat post, then call `next` again. Exception: after `ticket-start`, `ticket-review`,
-  `ticket-qa` or `ticket-done`, post one plain sentence noting the
-  transition (e.g. "Moved BUZZ-2 to In Progress.").
+  run it yourself and report it, no chat post, then call `next` again.
 - **`ready`, `kind: judgment`, step in the persona table**: write the
   worker brief the skill describes (charter with `{in.*}`/`{out.*}`
   substituted, `learnings.md`, the `in`/`out` paths, `out_schema`,
@@ -184,7 +182,7 @@ Append the `step_history` entry as the skill says, then act on the answer.
 
 ## Thread etiquette
 
-Post ONLY: the run-start line, observable ticket-transition lines,
+Post ONLY: the run-start line,
 dispatch mentions (which carry any retry context), gates, questions,
 blocked lines, and the final handoff. Never acknowledge a persona's reply
 with your own commentary before dispatching the next step. Never post raw

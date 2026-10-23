@@ -1,9 +1,8 @@
 """Step-contract presence for the complete-phase teardown tail.
 
-feature/bugfix pause at `ticket-qa`; `orchestrator complete` runs the finish
-spine (complete.yaml). Its tail is merge-to-main →
-remove-worktree → ticket-done, all of which dispatch as real directory-form
-DAG steps (f0d65c4 made merge-to-main and remove-worktree explicit).
+The complete-phase tail (merge-to-main → remove-worktree) dispatches as real
+directory-form DAG steps (f0d65c4 made merge-to-main and remove-worktree
+explicit).
 
 Dual-tree note: `~/.config/orchestrator/config` is an install.sh symlink to the
 repo `config/`, so `config/steps/` is one physical directory serving both

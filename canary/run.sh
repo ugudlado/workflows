@@ -69,13 +69,9 @@ run_step() {
   results+=("{\"step\":\"$id\",\"status\":\"$status\"}")
 }
 
-# Skipped: need a live backlog/ticket backend or the pack-registry publish
-# verb, which isn't available in this fixture harness.
+# Skipped: needs the pack-registry publish verb, which isn't available in
+# this fixture harness.
 : > "$SKIP_FILE"
-for id in ticket-start ticket-review ticket-qa ticket-rework ticket-done; do
-  echo "$id: needs a live backlog REST backend (ticketing=backlog); no fixture server here" >> "$SKIP_FILE"
-  results+=("{\"step\":\"$id\",\"status\":\"skipped\",\"reason\":\"needs live backlog backend\"}")
-done
 echo "persist-learnings: publishes to the pack scenario registry; no registry fixture here" >> "$SKIP_FILE"
 results+=("{\"step\":\"persist-learnings\",\"status\":\"skipped\",\"reason\":\"needs pack registry\"}")
 
