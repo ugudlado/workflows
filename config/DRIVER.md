@@ -95,7 +95,9 @@ sibling checkouts its build expects), and judgment steps run in a sandbox with
 no network, so they cannot install any of it. `create-worktree` runs the repo's
 committed `.orchestrator/setup.sh`, if present, once in the new worktree,
 outside the sandbox and with network, with `REPO_ROOT` set to the main checkout.
-A non-zero exit fails the step. Consumers commit it next to their bindings:
+Because it runs unsandboxed, it is read from the commit the worktree branched
+from (never the working tree) and runs only when the branch is new: a reused
+branch may hold an earlier run's agent commits. A non-zero exit fails the step. Consumers commit it next to their bindings:
 
 ```gitignore
 .orchestrator/*

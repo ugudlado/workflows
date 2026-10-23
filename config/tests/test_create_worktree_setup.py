@@ -62,3 +62,23 @@ def test_no_setup_is_fine(tmp_path):
     res = _run(tmp_path, _repo(tmp_path, None))
     assert res.returncode == 0, res.stderr
     assert json.loads(res.stdout.strip().splitlines()[-1])["created"] is True
+
+
+def test_setup_skipped_for_reused_branch(tmp_path):
+    """A branch that already exists may hold an earlier run's agent commits."""
+    repo = _repo(tmp_path, "touch ready\n")
+    _git(repo, "branch", "feature/demo")
+    res = _run(tmp_path, repo)
+    assert res.returncode == 0, res.stderr
+    out = json.loads(res.stdout.strip().splitlines()[-1])
+    assert not (Path(out["worktree_path"]) / "ready").exists()
+
+
+def test_uncommitted_setup_is_ignored(tmp_path):
+    repo = _repo(tmp_path, None)
+    (repo / ".orchestrator").mkdir()
+    (repo / ".orchestrator" / "setup.sh").write_text("touch ready\n")
+    res = _run(tmp_path, repo)
+    assert res.returncode == 0, res.stderr
+    out = json.loads(res.stdout.strip().splitlines()[-1])
+    assert not (Path(out["worktree_path"]) / "ready").exists()
