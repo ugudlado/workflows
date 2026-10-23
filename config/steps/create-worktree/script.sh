@@ -35,9 +35,11 @@ print(raw.get('schema') or '')
 " 2>/dev/null || printf '\n\n'
 }
 
-IFS=$'\n' read -r _EXISTING_WT _SCHEMA <<< "$(read_state)"
+{ IFS= read -r _EXISTING_WT; IFS= read -r _SCHEMA; } <<< "$(read_state)"
 
+# <workflow>/<slug>, bugfix as fix/; dev's name-branch renames dev/<slug> after triage.
 SCHEMA="${_SCHEMA:-feature}"
+[ "$SCHEMA" = bugfix ] && SCHEMA=fix
 BRANCH="$SCHEMA/$CHANGE_ID"
 WORKTREE_PATH="$WORKTREE_BASE_DIR/$CHANGE_ID"
 
@@ -54,11 +56,35 @@ if git -C "$REPO_ROOT" worktree list --porcelain | grep -q "worktree $WORKTREE_P
   exit 0
 fi
 
-git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_PATH" HEAD 2>&1 >&2 || {
+BASE="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+FRESH=1
+git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_PATH" "$BASE" 2>&1 >&2 || {
+  FRESH=0
   git -C "$REPO_ROOT" worktree add "$WORKTREE_PATH" "$BRANCH" 2>&1 >&2 || {
     printf '%s\n' '{"created": false, "reason": "git worktree add failed"}'
     exit 1
   }
 }
+
+# A fresh worktree has none of the repo's untracked setup (node_modules, a venv,
+# sibling checkouts its build expects). The repo's own committed
+# .orchestrator/setup.sh, if any, makes it ready: it runs here, outside the agent
+# sandbox and with network, in the new worktree, with REPO_ROOT set to the main
+# checkout. Checks that later steps run inside the sandbox can then work offline.
+# It runs unsandboxed, so only the copy in the commit this worktree branched from
+# (the repo owner's, read from git, not the working tree) and only for a branch
+# created just now: a reused branch may hold an earlier run's agent commits.
+if [ "$FRESH" = 1 ] && git -C "$REPO_ROOT" cat-file -e "$BASE:.orchestrator/setup.sh" 2>/dev/null; then
+  SETUP="$(mktemp)"
+  trap 'rm -f "$SETUP"' EXIT
+  git -C "$REPO_ROOT" show "$BASE:.orchestrator/setup.sh" >"$SETUP" &&
+    (cd "$WORKTREE_PATH" && REPO_ROOT="$REPO_ROOT" bash "$SETUP" </dev/null) >&2 || {
+    # Undo the worktree and branch: a retry would otherwise reuse them, and setup runs only for a new branch.
+    git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_PATH" >&2 2>&1
+    git -C "$REPO_ROOT" branch -D "$BRANCH" >&2 2>&1
+    printf '%s\n' '{"created": false, "reason": "setup.sh failed; worktree and branch removed"}'
+    exit 1
+  }
+fi
 
 printf '%s\n' "{\"created\": true, \"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\", \"state_patch\": {\"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\"}}"

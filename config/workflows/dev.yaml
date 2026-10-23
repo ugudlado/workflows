@@ -2,21 +2,27 @@ name: dev
 version: 1
 inputs:
   ticket: { type: string }
-# One workflow for features, bugfixes, hotfixes and quick changes. Paths:
+# One workflow for features, bugfixes, hotfixes and quick changes. Every path
+# starts create-worktree → load-ticket-context → triage → name-branch (branch
+# renamed for the call), and name-branch routes on triage's change_type. Paths:
 #   feature:      triage → explore → ux-design → (routes to) design → …
 #   standard fix: triage → (routes to) diagnose → design → …
-#   hotfix:       triage → diagnose → (routes to) hotfix-signoff → ticket-start → …
-#   quick:        triage → (routes to) quick-signoff → ticket-start → implement → …
+#   hotfix:       triage → diagnose → (routes to) hotfix-signoff → ux-critique → implement → …
+#   quick:        triage → (routes to) quick-signoff → ux-critique → implement → …
 # Learning is not part of this workflow: the nightly `learn` workflow reads
 # finished runs (see learn.yaml and DRIVER.md).
 steps:
   - check-rerun # halt if this slug's run already finished (workflow's own decision)
-  - create-worktree # creates worktree + branch; writes worktree_path+branch to state
+  # First, so no agent step ever runs in the main checkout.
+  - create-worktree # creates worktree + branch dev/<slug>; writes worktree_path+branch to state
   - load-ticket-context # judgment: ticket fetch or free-text brief → ticket-context.md (+ ticket.json)
+  - triage # feature, fix or quick → triage.md
+  # Renames the branch for triage's call (feature/, fix/, chore/<slug>) and
+  # echoes change_type to route on.
   # Fixes jump to diagnose; quick changes (small, well-specified, low risk)
   # skip investigation and design for a person's signoff; features fall
   # through to explore.
-  - id: triage
+  - id: name-branch
     routes:
       - { when: { change_type: fix }, goto: diagnose }
       - { when: { change_type: quick }, goto: quick-signoff }
@@ -34,25 +40,24 @@ steps:
   - id: design-review
     on_failure: design
   # Signoff before anything writes outside the run. Engine side is Phase 3.1.
-  # Skips the hotfix gate below by jumping straight to ticket-start.
+  # Skips the hotfix gate below by jumping straight to ux-critique.
   - gate: design-signoff
     show: [design, tasks]
     approve_as: impl_token
     routes:
-      - { goto: ticket-start }
+      - { goto: ux-critique }
   # Quick path: a person approves the triage call (scope + why it is small)
   # before code is written. Placed after design-signoff and before
   # hotfix-signoff: design-signoff routes past it, and hotfix-signoff falls
-  # through to ticket-start, so neither path can land here by accident.
+  # through to ux-critique, so neither path can land here by accident.
   - gate: quick-signoff
     show: [triage]
     approve_as: impl_token
     routes:
-      - { goto: ticket-start }
+      - { goto: ux-critique }
   # Hotfix path: a person still approves before code is written. Shows the
   # diagnosis only, since a hotfix has no design.
   - { gate: hotfix-signoff, show: [discovery], approve_as: impl_token }
-  - ticket-start # ticket -> In Progress (implement entry)
   # ux-critique self-reports verdict: skipped when no UI is touched or no ux
   # prototype exists (fix paths), so it needs no routing.
   - id: ux-critique
@@ -65,7 +70,6 @@ steps:
   - id: implement
     on_failure: design
     requires: impl_token
-  - ticket-review # ticket -> Review
   - id: code-review
     on_failure: implement
     max_retries: 8
@@ -74,7 +78,6 @@ steps:
   - id: human-review # human feedback after review; may reset_to implement|design|…
     on_failure: implement
     max_retries: 8
-  - ticket-qa # ticket -> Verify
   # complete phase — ends in a pull request, not a local merge. The worktree
   # stays for review fixes; the ticket is done when the PR merges, and
   # run artifacts live outside the worktree and never enter the branch.
@@ -86,7 +89,5 @@ steps:
   # it would land on the merged (dead) branch and vanish with the worktree.
   - { gate: pr-merged, show: [pr], approve_as: cleanup_token }
   - id: remove-worktree
-    requires: cleanup_token
-  - id: ticket-done
     requires: cleanup_token
   - workflow-report

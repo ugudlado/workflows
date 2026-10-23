@@ -14,8 +14,8 @@ it — see step 3.
 ## Context
 
 - Upstream: `code-review` passed (see `{in.code_review}` and `{out.tasks}`).
-- Resume text arrives as **User direction** in the prompt (CLI:
-  `orchestrator feature <ticket> "<text>"`). Empty direction means first ask.
+- Resume text arrives as **User direction** in the prompt (the driver re-runs
+  this step with the human's answer). Empty direction means first ask.
 - Prefer reading the existing review artifacts over guessing.
 
 ## Allowed `reset_to` targets (feature workflow)

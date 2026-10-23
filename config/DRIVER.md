@@ -57,7 +57,7 @@ gates): `collect-runs` → `learn` → `persist-learnings` → `mark-learned`.
 
 Both end in a pull request, not a local merge: gate `pr-signoff` →
 `mark-change-completed` → `open-pr` (requires `merge_token`) →
-gate `pr-merged` → `remove-worktree` → `ticket-done` → `workflow-report`.
+gate `pr-merged` → `remove-worktree` → `workflow-report`.
 `open-pr` pushes the branch and runs `gh pr create`; it never merges. The run
 then waits at `pr-merged`: the worktree stays for review fixes until the PR
 merges. Approve the gate only once the PR is merged (`gh pr view --json state`
@@ -69,14 +69,19 @@ the archive.
 engine answers `needs_you`): its `step_history` has a completed
 `workflow-report`. Start over by deleting the run dir.
 
-# Ticket steps (judgment)
+# Tickets
 
-`load-ticket-context`, `ticket-start`, `ticket-review`, `ticket-qa`,
-`ticket-rework` and `ticket-done` are all judgment steps. They pick the
-ticketing tool themselves by inspecting the tools their subagent has (issue
-tracker MCP tools, the git forge's CLI, the pack's backlog helper) following
-`lib/ticket/TICKETING.md`. The driver passes nothing special: no ticketing env,
-no status mapping, no ticket id.
+Workflows read the ticket and never move it: the tracker does that itself
+(Linear moves an issue when a branch or PR names its id). Use the ticket id as
+the run's slug so the branch carries it. The branch is
+`<type>/<slug>`: dev's `name-branch` renames it `feature/`, `fix/` or `chore/`
+from triage's call; feature runs use `feature/` and bugfix runs `fix/`; `open-pr` also links
+the ticket in the PR body.
+
+`load-ticket-context` is a judgment step. It picks the ticketing tool itself by
+inspecting the tools its subagent has (issue tracker MCP tools, the git forge's
+CLI, the pack's backlog helper) following `lib/ticket/TICKETING.md`. The driver
+passes nothing special: no ticketing env, no ticket id.
 
 `load-ticket-context`: the run's input is the user's message. Pass it to the
 subagent in the brief as `User direction: <text>`; there is no state input. The
@@ -85,5 +90,31 @@ step writes `ticket-context.md` and, for a real ticket id, `ticket.json`
 artifacts dir. On `ticket_context_status: await_input`, relay the `ask` and
 re-run the step with the answer as the new `User direction`.
 
-The status steps take `ticket.json` as the optional `in.ticket_ref`; absent, they
-report `skipped (no ticket)`. A failed tracker update fails the step.
+# Worktree setup and environment blockers
+
+A fresh worktree has none of a repo's untracked setup (node_modules, a venv,
+sibling checkouts its build expects), and judgment steps run in a sandbox with
+no network, so they cannot install any of it. `create-worktree` runs the repo's
+committed `.orchestrator/setup.sh`, if present, once in the new worktree,
+outside the sandbox and with network, with `REPO_ROOT` set to the main checkout.
+Because it runs unsandboxed, it is read from the commit the worktree branched
+from (never the working tree) and runs only when the branch is new: a reused
+branch may hold an earlier run's agent commits. That commit is only as trusted
+as the main checkout's refs: the self-hosted driver's sandbox denies agents
+writes to its `HEAD`, current branch ref and `packed-refs`; another driver must
+do the same. Treat `setup.sh` like a committed git hook: it runs with the
+driver user's environment and network. A non-zero exit removes the new worktree and branch, so a retry
+starts clean, and fails the step. Consumers commit it next to their bindings:
+
+```gitignore
+.orchestrator/*
+!.orchestrator/bindings.yaml
+!.orchestrator/setup.sh
+```
+
+An environment blocker (commit signing that the sandbox cannot reach, a missing
+dependency, a check the sandbox blocks) is not a code failure: `implement`
+reports `outcome: await_input` and `code-review` reports `verdict: await_input`,
+each with an `ask` naming the blocker. Relay it like any other question; failing
+instead would send the run back to design or implement, which cannot fix the
+machine.

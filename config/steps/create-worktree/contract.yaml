@@ -1,5 +1,5 @@
 id: create-worktree
-version: 2
+version: 3
 kind: exec
 run: script.sh
 tools: [fs.read, fs.write, shell.run, git.worktree]

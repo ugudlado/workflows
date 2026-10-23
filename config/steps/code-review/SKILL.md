@@ -126,12 +126,18 @@ not use an `extends` prompt.
 - For tasks that spec describes as a rewrite, projection, or byte-compatible replacement of an existing producer, AC verification MUST include a value/shape parity check against at least one real payload from the prior implementation — key-presence alone is insufficient. Reviewer must run both the old producer and the new one on a real archived fixture and diff the top-level output keys; any key reduction is an important finding.
 - Before scoring the phase, read tasks.yaml and check if any tasks still have `status: pending`. If any pending tasks exist and are not explicitly quarantined in state.yaml, write `{out.code_review}` listing the pending task IDs and report `verdict: incomplete_phase`, with no review_score. A non-pass verdict is required so the `on_failure` edge fires back to implement — reporting pass with tasks still pending silently advances the workflow past the implement phase. This guards against dispatcher bugs or manual advances that reach code-review before all tasks are complete. <!-- updated: 2026-05-25, source: orc-76, cycle: 1, repo: orchestrator -->
 - Spot audit: pick one `evidence.verified` entry from a completed `implement` step in step_history and re-run its `check` command. A mismatch with the recorded `result` is a critical correctness finding (fabricated evidence) — this is the only enforcement on self-reported evidence, so treat a mismatch as severe.
+- A check the repo requires that cannot run for an environment reason (the
+  sandbox blocks it, a dependency or sibling checkout is missing, commit
+  signing fails in a test fixture) is not a code defect. Report
+  `verdict: await_input` with an `ask` naming the check and the blocker, not
+  `needs_work`: needs_work sends the run to implement, which cannot fix the
+  machine.
 
 ## Verify
 
 - Code review report written to {out.code_review}
 - When code_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing code-review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
-- Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed. No other combination is valid.
+- Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed; await_input (an environment blocker, with an `ask`) → completed, and the engine relays the ask. No other combination is valid.
 - When code_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
 - All critical findings have either a reopened task with a new `reviews` entry, a new `fix-N` task, or are resolved
 - On needs_work, `{out.tasks}` is updated alongside `{out.code_review}`

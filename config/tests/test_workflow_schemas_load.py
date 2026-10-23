@@ -195,11 +195,12 @@ def test_schema_ends_in_pr_not_merge(schema_name):
     steps = _schema_step_ids(schema_name)
     tail = steps[steps.index("mark-change-completed"):]
     assert tail == ["mark-change-completed", "open-pr", "pr-merged",
-                    "remove-worktree", "ticket-done", "workflow-report"]
+                    "remove-worktree", "workflow-report"]
     assert not {"archive-completed-change", "merge-to-main"} & set(steps)
     assert _schema_step_entry(schema_name, "open-pr")["requires"] == "merge_token"
-    for step in ("remove-worktree", "ticket-done"):
-        assert _schema_step_entry(schema_name, step)["requires"] == "cleanup_token"
+    assert _schema_step_entry(schema_name, "remove-worktree")["requires"] == "cleanup_token"
+    # The tracker moves tickets itself (Linear, from the branch and PR), so no workflow has status steps.
+    assert not [s for s in steps if s.startswith("ticket-")]
 
 
 def test_open_pr_contract():

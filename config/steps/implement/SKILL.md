@@ -46,7 +46,17 @@ protocol. Do not use an `extends` prompt.
    scope: treat the latest `reviews[].comment` as the work order for this pass.
 4. Resolve execution order: respect `depends_on` — do not start a task until all
    its dependencies have `status: completed`.
-5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and fail the step with a reason — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
+5. **Shell capability probe**: before starting the first task, run `git status` and `echo ok` to confirm shell commands are not blocked. If either command fails or is rejected, record the failure in `known_concerns` and report it as an environment blocker (below) — do NOT attempt any task. This prevents wasting tool budget on a task loop that cannot commit.
+
+### Environment blockers
+
+A blocker in the machine, not the code, is not a failed implementation: a
+commit that cannot be signed, a dependency or sibling checkout missing from
+the worktree, a check the sandbox will not let run. Stop, keep any commits you
+made, and report `outcome: await_input` with an `ask` that names the blocker
+and what would clear it. Never report `failed` for one: failing sends the run
+back to design, which cannot fix the machine. Never work around one by
+disabling signing, hooks or checks.
 
 ### Per-task loop
 

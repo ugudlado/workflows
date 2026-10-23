@@ -52,25 +52,24 @@ models:
     - { model_id: claude-sonnet-5, tool: claude }
 
 step_models:
+  # Larger models plan and review (triage, diagnose, design, the reviews); smaller ones execute
+  # (implement, open-pr, UX) and keep the books (load-ticket-context, human-review's ask). A wrong plan or a
+  # missed defect costs more re-runs than the model difference. ORCH_MODEL_OVERRIDE in the driver
+  # replaces all of this with one model.
   design: strong
-  ux-design: strong
-  code-review: strong
+  ux-design: standard
+  code-review: opus
   explore: standard
-  triage: fast
-  diagnose: standard
+  triage: opus
+  diagnose: strong
   learn: standard
-  design-review: standard
+  design-review: opus
   ux-critique: standard
-  verify-changes: standard
+  verify-changes: opus
   open-pr: standard
   human-review: standard
-  implement: code
+  implement: standard
   load-ticket-context: fast
-  ticket-start: fast
-  ticket-review: fast
-  ticket-qa: fast
-  ticket-rework: fast
-  ticket-done: fast
   intake-research: code
   source-search: code
   synthesize-findings: code

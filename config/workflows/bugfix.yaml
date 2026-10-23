@@ -12,15 +12,12 @@ steps:
     on_failure: design
   # Signoff before anything writes outside the run. Engine side is Phase 3.1.
   - { gate: design-signoff, show: [design, tasks], approve_as: impl_token }
-  - ticket-start
   - id: implement
     on_failure: design
     requires: impl_token
-  - ticket-review
   - id: code-review
     on_failure: implement
     max_retries: 8
-  - ticket-qa
   # complete phase — same PR tail as feature (see DRIVER.md).
   - { gate: pr-signoff, show: [design, tasks, code_review], approve_as: merge_token }
   - mark-change-completed
@@ -30,7 +27,5 @@ steps:
   # it would land on the merged (dead) branch and vanish with the worktree.
   - { gate: pr-merged, show: [pr], approve_as: cleanup_token }
   - id: remove-worktree
-    requires: cleanup_token
-  - id: ticket-done
     requires: cleanup_token
   - workflow-report

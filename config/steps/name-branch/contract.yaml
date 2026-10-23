@@ -1,0 +1,11 @@
+id: name-branch
+version: 1
+kind: exec
+run: script.sh
+tools: [fs.read, shell.run, git.worktree]
+side_effects: [write:workspace]
+in:
+  triage: { artifact: triage.md }
+out:
+  change_type: { type: enum, values: [feature, fix, quick] } # triage's call, for dev.yaml's routes
+  branch: { type: string, optional: true }
