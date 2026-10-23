@@ -36,7 +36,7 @@ ticket alone; do not explore code or propose a solution.
 3. Write `{out.triage}`: a heading with the call (`# Triage: feature`,
    `# Triage: fix` or `# Triage: quick`) and one paragraph of rationale that
    quotes or cites the ticket text the call rests on. Keep the heading exact:
-   `create-worktree` reads it to name the branch (`feature/`, `fix/`, `chore/`).
+   `name-branch` reads it to name the branch (`feature/`, `fix/`, `chore/`).
 4. Use `await_input` only when the ticket is genuinely ambiguous (it reads
    equally as a bug or a request and the difference changes the path). Write
    nothing and give one focused `ask`. A bug report with a vague title is not

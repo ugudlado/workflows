@@ -3,8 +3,8 @@ version: 1
 inputs:
   ticket: { type: string }
 # One workflow for features, bugfixes, hotfixes and quick changes. Every path
-# starts load-ticket-context → triage → create-worktree (branch named for the
-# call), and create-worktree routes on triage's change_type. Paths:
+# starts create-worktree → load-ticket-context → triage → name-branch (branch
+# renamed for the call), and name-branch routes on triage's change_type. Paths:
 #   feature:      triage → explore → ux-design → (routes to) design → …
 #   standard fix: triage → (routes to) diagnose → design → …
 #   hotfix:       triage → diagnose → (routes to) hotfix-signoff → ux-critique → implement → …
@@ -13,14 +13,16 @@ inputs:
 # finished runs (see learn.yaml and DRIVER.md).
 steps:
   - check-rerun # halt if this slug's run already finished (workflow's own decision)
+  # First, so no agent step ever runs in the main checkout.
+  - create-worktree # creates worktree + branch dev/<slug>; writes worktree_path+branch to state
   - load-ticket-context # judgment: ticket fetch or free-text brief → ticket-context.md (+ ticket.json)
   - triage # feature, fix or quick → triage.md
-  # The branch is named for triage's call (feature/, fix/, chore/<slug>), so the
-  # worktree comes after it; create-worktree echoes change_type to route on.
+  # Renames the branch for triage's call (feature/, fix/, chore/<slug>) and
+  # echoes change_type to route on.
   # Fixes jump to diagnose; quick changes (small, well-specified, low risk)
   # skip investigation and design for a person's signoff; features fall
   # through to explore.
-  - id: create-worktree
+  - id: name-branch
     routes:
       - { when: { change_type: fix }, goto: diagnose }
       - { when: { change_type: quick }, goto: quick-signoff }
