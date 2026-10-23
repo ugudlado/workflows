@@ -77,7 +77,10 @@ if [ "$FRESH" = 1 ] && git -C "$REPO_ROOT" cat-file -e "$BASE:.orchestrator/setu
   trap 'rm -f "$SETUP"' EXIT
   git -C "$REPO_ROOT" show "$BASE:.orchestrator/setup.sh" >"$SETUP" &&
     (cd "$WORKTREE_PATH" && REPO_ROOT="$REPO_ROOT" bash "$SETUP" </dev/null) >&2 || {
-    printf '%s\n' "{\"created\": true, \"reason\": \"setup.sh failed\", \"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\", \"state_patch\": {\"worktree_path\": \"$WORKTREE_PATH\", \"branch\": \"$BRANCH\"}}"
+    # Undo the worktree and branch: a retry would otherwise reuse them, and setup runs only for a new branch.
+    git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_PATH" >&2 2>&1
+    git -C "$REPO_ROOT" branch -D "$BRANCH" >&2 2>&1
+    printf '%s\n' '{"created": false, "reason": "setup.sh failed; worktree and branch removed"}'
     exit 1
   }
 fi

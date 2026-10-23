@@ -55,7 +55,11 @@ def test_failing_setup_fails_the_step(tmp_path):
     repo = _repo(tmp_path, "exit 3\n")
     res = _run(tmp_path, repo)
     assert res.returncode != 0
-    assert json.loads(res.stdout.strip().splitlines()[-1])["reason"] == "setup.sh failed"
+    assert json.loads(res.stdout.strip().splitlines()[-1])["reason"].startswith("setup.sh failed")
+    # Nothing left behind, so a retry creates the branch afresh and runs setup again.
+    assert not (tmp_path / "wt" / "demo").exists()
+    branches = subprocess.run(["git", "-C", str(repo), "branch", "--list", "feature/demo"], capture_output=True, text=True)
+    assert branches.stdout.strip() == ""
 
 
 def test_no_setup_is_fine(tmp_path):

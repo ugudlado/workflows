@@ -97,7 +97,11 @@ committed `.orchestrator/setup.sh`, if present, once in the new worktree,
 outside the sandbox and with network, with `REPO_ROOT` set to the main checkout.
 Because it runs unsandboxed, it is read from the commit the worktree branched
 from (never the working tree) and runs only when the branch is new: a reused
-branch may hold an earlier run's agent commits. A non-zero exit fails the step. Consumers commit it next to their bindings:
+branch may hold an earlier run's agent commits. That commit is only as trusted
+as the main checkout's refs: the self-hosted driver's sandbox denies agents
+writes to its `HEAD`, current branch ref and `packed-refs`; another driver must
+do the same. A non-zero exit removes the new worktree and branch, so a retry
+starts clean, and fails the step. Consumers commit it next to their bindings:
 
 ```gitignore
 .orchestrator/*

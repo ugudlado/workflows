@@ -137,7 +137,7 @@ not use an `extends` prompt.
 
 - Code review report written to {out.code_review}
 - When code_review_report.verdict is pass: review_score recorded in step_history with status: completed. When verdict is needs_work: same review_score shape but status MUST be failed (see step 9c — completed with a needs_work verdict disarms the on_failure edge and the workflow advances past a failing code-review; this happened live on BKG-575). <!-- updated: 2026-07-28, source: bkg-575 gate bypass -->
-- Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed. No other combination is valid.
+- Verdict→status mapping is exact: pass → completed; needs_work or incomplete_phase → failed; await_input (an environment blocker, with an `ask`) → completed, and the engine relays the ask. No other combination is valid.
 - When code_review_report.verdict is incomplete_phase: review_score is omitted from step_history (nothing to score)
 - All critical findings have either a reopened task with a new `reviews` entry, a new `fix-N` task, or are resolved
 - On needs_work, `{out.tasks}` is updated alongside `{out.code_review}`
