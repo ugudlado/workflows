@@ -137,3 +137,13 @@ reports `outcome: await_input` and `code-review` reports `verdict: await_input`,
 each with an `ask` naming the blocker. Relay it like any other question; failing
 instead would send the run back to design or implement, which cannot fix the
 machine.
+
+# `ask` workflow
+
+`answer` → `workflow-report`: one question, one sourced answer; no worktree,
+branch, gate or PR. `answer`'s input is the user's message: pass it in the
+brief as `User direction: <text>`, with the project's standing instructions
+when it has any, and run the subagent in the project's directory (a repo, or
+a repo-less project's files). It writes `answer.md`. On
+`answer_status: await_input`, relay the `ask` and re-run the step with the
+answer as the new `User direction`. The answer file is the run's result.

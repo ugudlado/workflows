@@ -70,6 +70,7 @@ step_models:
   human-review: standard
   implement: standard
   load-ticket-context: fast
+  answer: code
   intake-research: code
   source-search: code
   synthesize-findings: code
