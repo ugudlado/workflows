@@ -5,8 +5,9 @@ with the pack's GitHub token (lib/forge/github.py), and fetches origin's default
 refs/remotes/origin/<default>. It writes pr-base.json for open-pr:
 {default_branch, base_ref, base_sha, fetched, reason?}.
 
-No token, or an origin that isn't on GitHub: nothing is fetched (fetched: false, with the reason) and
-open-pr rebases onto what the repo already has. That is not a failure; push-pr asks for the token.
+No token: the fetch is tried without one, which a public repo allows. When that fails (a private
+repo), or origin isn't on GitHub, nothing is fetched (fetched: false, with the reason) and open-pr
+rebases onto what the repo already has. That is not a failure; push-pr asks for the token.
 
 Env (from the driver): REPO_ROOT, ORCHESTRATOR_ARTIFACTS_DIR.
 """
@@ -44,8 +45,18 @@ def main() -> int:
         github.check_repo_config(repo)
         if not slug:
             record["reason"] = "origin is not a GitHub repo"
-        elif not tok:
-            record["reason"] = f"no GitHub token at {github.token_file()}"
+        elif not tok:  # a public repo needs no token; a private one fails here and keeps what the repo has
+            default = local_default(repo)
+            env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"}
+            github.git(
+                repo,
+                "fetch",
+                "--no-tags",
+                github.remote_url(*slug),
+                f"+refs/heads/{default}:refs/remotes/origin/{default}",
+                env=env,
+            )
+            record.update({"fetched": True, "default_branch": default})
         else:
             owner, name = slug
             default = github.api(tok, "GET", f"/repos/{owner}/{name}")["default_branch"]

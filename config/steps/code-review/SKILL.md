@@ -28,10 +28,11 @@ not use an `extends` prompt.
    then lockfile/manifest conventions (pyproject → `pytest -q`,
    package.json scripts, etc.). Execute every discovered command. Any
    non-zero exit is a critical correctness finding — cannot pass this round.
-   If no verify command is discoverable at all: this is itself a critical
-   finding in spec_compliance (missing quality gate) — cannot pass this
-   round. Write `{out.code_review}` noting what was searched and what the
-   repo should document, and report `verdict: needs_work` per step 9 below.
+   If no verify command is discoverable at all: that is the repo's gap, not
+   a defect of this change, and implement cannot fix it. Record it in
+   `{out.code_review}` as a note (what was searched, what the repo should
+   document), not as a finding, and go on with the review; the acceptance
+   criteria in step 6 still need evidence.
 3. Score each dimension separately on 1-10 using the same caps and rubric:
    - Dimensions: spec_compliance, correctness, security, simplicity, code_quality
    - For each dimension:

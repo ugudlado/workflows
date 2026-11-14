@@ -136,12 +136,28 @@ def test_fetch_base_fetches_the_default_branch(run):
     assert all(c[3] == f"Bearer {TOKEN}" for c in FakeGitHub.calls)
 
 
-def test_fetch_base_without_a_token_uses_what_the_repo_has(run):
+def test_fetch_base_without_a_token_fetches_a_public_repo(run):
     run["tokfile"].unlink()
+    other = run["bare"].parent / "other"
+    git(run["bare"].parent, "clone", "-q", str(run["bare"]), str(other))
+    (other / "b.txt").write_text("b\n")
+    git(other, "add", ".")
+    git(other, "commit", "-qm", "upstream")
+    git(other, "push", "-q", "origin", "main")
     out = step("fetch-base", run["env"])
     base = json.loads((run["art"] / "pr-base.json").read_text())
-    assert out["fetched"] is False and "no GitHub token" in base["reason"]
-    assert base["base_sha"] == git(run["repo"], "rev-parse", "main")
+    assert out["fetched"] is True and base["base_sha"] == git(other, "rev-parse", "HEAD")
+    assert FakeGitHub.calls == []
+
+
+def test_fetch_base_without_a_token_keeps_what_the_repo_has_when_the_fetch_fails(run):
+    run["tokfile"].unlink()  # a private repo: the fetch without a token is refused
+    run["env"]["ORCH_GITHUB_URL"] += "-private"
+    git(run["repo"], "remote", "set-url", "origin", f"{run['env']['ORCH_GITHUB_URL']}/acme/widget.git")
+    out = step("fetch-base", run["env"])
+    base = json.loads((run["art"] / "pr-base.json").read_text())
+    assert out["fetched"] is False and "git fetch failed" in base["reason"]
+    assert base["base_ref"] == "origin/main" and base["base_sha"] == git(run["repo"], "rev-parse", "origin/main")
     assert FakeGitHub.calls == []
 
 
