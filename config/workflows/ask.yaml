@@ -1,0 +1,15 @@
+name: ask
+version: 1
+inputs:
+  ticket: { type: string }
+# Ask workflow: one question, one sourced answer. No worktree, branch, gate or PR.
+#
+# The run's input is the question (the user's message, passed in the brief as
+# `User direction`). `answer` reads the project's own files first (the working
+# directory: a repo, or a repo-less project's instructions and files), then the
+# web for what they do not cover, and writes answer.md with a source per claim.
+# A question too vague to answer comes back as one `ask` (await_input).
+# For a full study with a storyline and deliverables use `research`.
+steps:
+  - answer
+  - workflow-report

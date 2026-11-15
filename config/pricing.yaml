@@ -145,3 +145,34 @@ models:
     cache_read_usd: 0.2
     cache_creation_usd: 0.0
     effective_from: "2025-01-01T00:00:00"
+
+  # The 5.5 family and Fable 5.2 (what `opus` / `sonnet` / `haiku` resolve to in
+  # Claude Code today). Cache writes at the 5-minute rate, 1.25x input.
+  - model_id: claude-opus-5-5
+    input_usd: 4.0
+    output_usd: 20.0
+    cache_read_usd: 0.2
+    cache_creation_usd: 5.0
+    effective_from: "2026-01-01T00:00:00"
+
+  - model_id: claude-sonnet-5-5
+    input_usd: 2.0
+    output_usd: 10.0
+    cache_read_usd: 0.1
+    cache_creation_usd: 2.5
+    effective_from: "2026-01-01T00:00:00"
+
+  # Prompts up to 100K tokens; above that Haiku 5.5 is 0.50 / 2.50.
+  - model_id: claude-haiku-5-5
+    input_usd: 0.1
+    output_usd: 0.5
+    cache_read_usd: 0.01
+    cache_creation_usd: 0.125
+    effective_from: "2026-01-01T00:00:00"
+
+  - model_id: claude-fable-5-2
+    input_usd: 8.0
+    output_usd: 40.0
+    cache_read_usd: 0.2
+    cache_creation_usd: 10.0
+    effective_from: "2026-01-01T00:00:00"

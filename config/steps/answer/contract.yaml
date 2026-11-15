@@ -1,0 +1,12 @@
+id: answer
+version: 1
+kind: judgment
+prompt: SKILL.md
+max_turns: 40
+tools: [fs.read, fs.write, fs.list, shell.run]
+side_effects: []
+in: {}
+out:
+  answer: { artifact: answer.md }
+  source_count: { type: number, optional: true }
+  answer_status: { type: enum, values: [complete, await_input] }

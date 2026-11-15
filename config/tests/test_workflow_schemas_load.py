@@ -121,6 +121,7 @@ _SCHEMA_TERMINAL_STEP = {
     "bugfix": "workflow-report",
     "dev": "workflow-report",
     "research": "workflow-report",
+    "ask": "workflow-report",
 }
 
 
