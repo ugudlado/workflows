@@ -14,7 +14,7 @@ for a storyline and deliverables there is the `research` workflow.
 ## Verify
 
 - `{out.answer}` exists and opens with the answer itself, in at most five
-  sentences, before any detail.
+  sentences, before any detail. It never repeats the question.
 - Every claim in it carries a source you opened in this run: a project file
   (path, and the line or section) or a web page (title and URL).
 - What the sources do not settle is listed under `## Not known`, not guessed.
@@ -31,16 +31,21 @@ for a storyline and deliverables there is the `research` workflow.
 3. Look in the project first: list the working directory, search it for the
    question's terms, and read the files that match. A fact the project states
    outranks the web's general answer; when they disagree, say so and cite both.
-4. Use the web for what the project does not cover, with the search, browse or
+4. If the standing instructions keep you to the project (for example "do not
+   search the web"), skip this step. Otherwise use the web for what the project does not cover, with the search, browse or
    fetch tools this agent has (`curl` for a known URL). Open each page; a search
    snippet is not a source. Prefer primary and official pages, check the date,
    and drop a page that does not load or does not say what the snippet claimed.
    If you have no way to reach the web, say so under `## Not known` and answer
    from the project alone.
 5. Write `{out.answer}`:
-   - `# <the question, as asked>`
-   - The answer, directly, in at most five sentences.
-   - `## Detail`: only what the person needs to act on or check the answer,
+   - When the sources you may use do not answer the question, the whole answer
+     is one or two plain sentences: that you do not know, why (for example the
+     code or document is not in the project), and what would let you answer.
+     No sections. Stop here.
+   - Otherwise the answer, directly, in at most five sentences. Do not repeat
+     or restate the question, and do not start with a heading.
+   - `## Detail` (only when the person needs it): only what the person needs to act on or check the answer,
      each claim followed by its source marker, e.g. `[1]`.
    - `## Not known`: what the sources leave open, and what would settle it.
      Omit the section when nothing is open.
