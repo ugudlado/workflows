@@ -60,6 +60,13 @@ Both end in a pull request, not a local merge: gate `pr-signoff` →
 require `merge_token`) → gate `pr-merged` → `remove-worktree` →
 `workflow-report`. Nothing merges.
 
+- **One approval opens the PR.** Where `human-review` runs straight before
+  `pr-signoff` (`feature`, `dev`), the human answers once: `human-review`'s
+  ask says that approving opens the PR, and when it reports `approved`, record
+  that same human reply as the `pr-signoff` approval instead of asking again.
+  Only a human reply to that ask counts; any rework answer goes through
+  `human-review` as usual. `bugfix` has no `human-review`, so its
+  `pr-signoff` is asked on its own.
 - `fetch-base` (exec) fetches origin's default branch and writes
   `pr-base.json` (`base_ref`, `fetched`, and a `reason` when it couldn't).
 - `open-pr` (judgment, no network, no forge tools) rebases onto `base_ref`,

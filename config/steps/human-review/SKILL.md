@@ -32,8 +32,9 @@ Only emit a step id that exists on this workflow:
 2. **First ask (no User direction yet)** — Report `decision: await_input` with
    an `ask` and an options list. Reporting `await_input` stops the run; the
    driver relays `ask` to the user and re-runs you with their answer as User
-   direction. Always include `approve` and at least the
-   `implement` rework option; add `design`/`explore`/`ux-design` options only
+   direction. Say in the ask that approving opens the pull
+   request (the driver records the same reply as `pr-signoff`). Always
+   include `approve` and at least the `implement` rework option; add `design`/`explore`/`ux-design` options only
    when there's a specific known concern for that layer.
 
 3. **User direction present (from the driver's brief)** — interpret it:
